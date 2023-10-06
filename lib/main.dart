@@ -1,8 +1,9 @@
 import 'dart:io' as io;
 
 import 'package:coach/import.dart';
-import 'package:coach/line_chart_sample2.dart';
+import 'package:coach/line_chart.dart';
 import 'package:desktop_window/desktop_window.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -12,10 +13,18 @@ void main() {
   testWindowFunctions();
 }
 
+List<FlSpot> testData = [
+  const FlSpot(0, 3),
+  const FlSpot(2.6, 2),
+  const FlSpot(4.9, 5),
+  const FlSpot(6.8, 3.1),
+  const FlSpot(8, 4),
+  const FlSpot(9.5, 3),
+  const FlSpot(11, 4),
+];
+
 Future testWindowFunctions() async {
-  Size size = await DesktopWindow.getWindowSize();
-  print(size);
-  await DesktopWindow.setWindowSize(Size(800, 800));
+  await DesktopWindow.setWindowSize(const Size(800, 800));
 
   // await DesktopWindow.setMinWindowSize(Size(400, 400));
   // await DesktopWindow.setMaxWindowSize(Size(800, 800));
@@ -54,10 +63,14 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
+// CoachLineChart chart = CoachLineChart(data: data);
+
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
   final io.File dataFile =
       io.File('C:\\Users\\Rick\\Nextcloud\\BodyComposition_202307-202309.csv');
+
+  var data = [const FlSpot(0,0)];
 
   void _incrementCounter() {
     setState(() {
@@ -67,6 +80,8 @@ class _MyHomePageState extends State<MyHomePage> {
       // _counter without calling setState(), then the build method would not be
       // called again, and so nothing would appear to happen.
       _counter++;
+      data.clear();
+      data.addAll(testData);
       if (defaultTargetPlatform == TargetPlatform.windows) {
         testWindowFunctions();
       } else {
@@ -83,7 +98,7 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      body: lineChart(_counter, context),
+      body: lineChart(context, _counter, CoachLineChart(data: data)),
       floatingActionButton: FloatingActionButton(
         onPressed: _incrementCounter,
         tooltip: 'Increment',
@@ -93,7 +108,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-Widget lineChart(int counter, BuildContext context) {
+Widget lineChart(BuildContext context, int counter, CoachLineChart chart) {
   return Center(
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -105,7 +120,7 @@ Widget lineChart(int counter, BuildContext context) {
           '$counter',
           style: Theme.of(context).textTheme.headlineMedium,
         ),
-        const LineChartSample2(),
+        chart,
       ],
     ),
   );
