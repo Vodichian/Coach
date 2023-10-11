@@ -14,13 +14,15 @@ class LocalProfileDatabase extends ProfileDatabase {
 
   final List<Profile> _profiles = [];
   final Uuid uuid = const Uuid();
-  final File _profilesPath;
+  final File _profilesFile;
 
-  LocalProfileDatabase(this._profilesPath);
+  LocalProfileDatabase(this._profilesFile) {
+    load();
+  }
 
   void load() {
     _profiles.clear();
-    final contents = _profilesPath.readAsStringSync();
+    final contents = _profilesFile.readAsStringSync();
     if (contents.isEmpty) return;
 
     List decodedList = jsonDecode(
@@ -128,7 +130,7 @@ class LocalProfileDatabase extends ProfileDatabase {
       toEncodable: (object) => Profile.toJson(object),
     );
 
-    _profilesPath.writeAsStringSync(jsonString);
+    _profilesFile.writeAsStringSync(jsonString);
     notifyListeners();
   }
 

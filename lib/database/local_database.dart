@@ -7,8 +7,9 @@ import 'package:coach/database/profile.dart';
 import 'package:coach/database/profile_database.dart';
 import 'package:coach/import.dart';
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:logger/logger.dart';
 import 'local_profile_database.dart';
+import 'package:path/path.dart' as p;
 
 /// LocalDatabase
 ///
@@ -16,33 +17,34 @@ import 'local_profile_database.dart';
 /// as I discovered I needed it while developing the application. A great deal of
 /// refactoring will be required down the road - 9/10/23 Rick
 class LocalDatabase extends ChangeNotifier implements Database {
+  var logger = Logger(
+    printer: PrettyPrinter(methodCount: 0),
+  );
+
   final List<HealthRecord> healthRecords = [];
-  var allRecords = <Profile, List<HealthRecord>>{}; // TODO: 10/9/2023 Finish creating this map
-  final ProfileDatabase profileDatabase = LocalProfileDatabase();
-  
-  LocalDatabase() {
-    // Load database files into memory
-    
+  var allRecords = <Profile,
+      List<HealthRecord>>{}; // TODO: 10/9/2023 Finish creating this map
+  late final ProfileDatabase _profileDatabase;
+  late final File recordsFile;
+
+  LocalDatabase(Directory directory) {
+    String profilesPath = p.join(directory.absolute.path, 'profiles.json');
+    File profilesFile = File(profilesPath);
+    logger.d("Loading profile database at $profilesPath");
+    _profileDatabase = LocalProfileDatabase(profilesFile);
+
+    String recordsPath = p.join(directory.absolute.path, 'records.json');
+    recordsFile = File(recordsPath);
+    logger.d("Setting database location to $recordsPath");
   }
-  
-  Future<String> get _localSupportPath async {
-    final directory = await getApplicationSupportDirectory();
-    return directory.path;
-  }
-  
-  Future<File> get _localDatabaseFile async {
-    final path = await _localSupportPath;
-    return File('$path/database');
-  }
-  
+
   Future<File> _persist() async {
-    final file = await _localDatabaseFile;
-    return file.writeAsBytes(allRecords.to)
+    throw UnimplementedError();
   }
 
-  Profile get currentProfile => profileDatabase.currentProfile();
+  Profile get currentProfile => _profileDatabase.currentProfile();
 
-  // TODO: 10/9/2023 here for testing purposes, to be removed 
+  // TODO: 10/9/2023 here for testing purposes, to be removed
   void initialize() {
     final File dataFile =
         File('C:\\Users\\Rick\\Nextcloud\\BodyComposition_202307-202309.csv');
@@ -52,8 +54,7 @@ class LocalDatabase extends ChangeNotifier implements Database {
 
   @override
   Profile makeProfile(String name) {
-    // TODO: implement makeProfile
-    throw UnimplementedError();
+    return _profileDatabase.add(name, DateTime.now(), Gender.male);
   }
 
   @override
@@ -71,8 +72,7 @@ class LocalDatabase extends ChangeNotifier implements Database {
 
   @override
   List<Profile> profiles() {
-    // TODO: implement profiles
-    throw UnimplementedError();
+    return _profileDatabase.profiles();
   }
 
   @override
@@ -83,7 +83,7 @@ class LocalDatabase extends ChangeNotifier implements Database {
 
   @override
   void removeProfile(Profile profile) {
-    // TODO: implement removeProfile
+    _profileDatabase.remove(profile);
   }
 
   @override
@@ -92,9 +92,8 @@ class LocalDatabase extends ChangeNotifier implements Database {
   }
 
   @override
-  Profile updateProfile(Profile profile) {
-    // TODO: implement updateProfile
-    throw UnimplementedError();
+  void updateProfile(Profile profile) {
+    _profileDatabase.update(profile);
   }
 
   @override
@@ -112,9 +111,35 @@ class LocalDatabase extends ChangeNotifier implements Database {
     }
 
     return profileRecords.singleWhere(
-            (element) => element.date == date && element.weight == weight,
+        (element) => element.date == date && element.weight == weight,
         orElse: () {
       throw NoSuchRecordException("No matching record was found");
     });
+  }
+
+  void clearProfiles() {
+    if (_profileDatabase is LocalProfileDatabase) {
+      (_profileDatabase as LocalProfileDatabase).clear();
+    } else {
+      throw UnsupportedError(
+          "clearProfiles not supported for installed profile database");
+    }
+  }
+
+  @override
+  void makeProfileCurrent(Profile profile) {
+    _profileDatabase.makeProfileCurrent(profile);
+  }
+
+  @override
+  void addListener(VoidCallback listener) {
+    _profileDatabase.addListener(listener);
+    super.addListener(listener);
+  }
+
+  @override
+  void removeListener(VoidCallback listener) {
+    _profileDatabase.removeListener(listener);
+    super.removeListener(listener);
   }
 }

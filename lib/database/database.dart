@@ -45,5 +45,8 @@ abstract class Database extends ChangeNotifier {
   /// Persists the modifications made to [profile].
   ///
   /// Throws [NoSuchProfileException] if [profile] is not found.
-  Profile updateProfile(Profile profile);
+  void updateProfile(Profile profile);
+
+  /// Make [profile] the current [Profile]
+  void makeProfileCurrent(Profile profile);
 }
