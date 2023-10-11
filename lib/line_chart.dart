@@ -4,13 +4,10 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 class CoachLineChart extends StatefulWidget {
-  final List<FlSpot> data;
-
-  const CoachLineChart({super.key, required this.data});
+  const CoachLineChart({super.key});
 
   @override
   State<CoachLineChart> createState() => _CoachLineChartState();
-
 }
 
 class _CoachLineChartState extends State<CoachLineChart> {
@@ -21,6 +18,7 @@ class _CoachLineChartState extends State<CoachLineChart> {
 
   bool showAvg = false;
 
+  final LineChartDataBuilder _builder = LineChartDataBuilder();
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +34,7 @@ class _CoachLineChartState extends State<CoachLineChart> {
               bottom: 12,
             ),
             child: LineChart(
-              LineChartDataBuilder(widget.data).loadData(widget.data),
+              _builder.loadData(widget.records),
             ),
           ),
         ),

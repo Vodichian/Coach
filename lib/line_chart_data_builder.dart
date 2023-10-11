@@ -1,13 +1,11 @@
 
 import 'package:coach/app_colors.dart';
+import 'package:coach/database/health_record.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 class LineChartDataBuilder {
-  List<FlSpot> data;
-  LineChartDataBuilder(this.data);
-
-  List<Color> gradientColors = [
+  static final List<Color> gradientColors = [
     AppColors.contentColorCyan,
     AppColors.contentColorBlue,
   ];
@@ -15,7 +13,9 @@ class LineChartDataBuilder {
   // List<FlSpot> data;
 
 
-  LineChartData loadData(List<FlSpot> data) {
+  // LineChartData loadData(List<FlSpot> data) {
+  LineChartData loadData(List<HealthRecord> records) {
+    List<FlSpot> data = convert(records);
     return LineChartData(
       gridData: FlGridData(
         show: true,
@@ -152,5 +152,12 @@ class LineChartDataBuilder {
     return Text(text, style: style, textAlign: TextAlign.left);
   }
 
+  List<FlSpot> convert(List<HealthRecord> records) {
+    List<FlSpot> list = [];
+    for (var record in records) {
+      list.add(FlSpot(record.date.month as double, record.weight));
+    }
+    return list;
+  }
 
 }

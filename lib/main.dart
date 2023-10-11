@@ -1,18 +1,26 @@
-import 'dart:io' as io;
-
+import 'package:coach/database/database.dart';
+import 'package:coach/database/local_database.dart';
+import 'package:coach/database/profile.dart';
 import 'package:coach/import.dart';
 import 'package:coach/line_chart.dart';
 import 'package:desktop_window/desktop_window.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => LocalDatabase(),
+      child: const MyApp(),
+    ),
+  );
   logger.d("Platform is: $defaultTargetPlatform");
-  testWindowFunctions();
+  updateWindowsPrefs();
 }
 
+// TODO: 10/6/2023 Replace with a Database method
 List<FlSpot> testData = [
   const FlSpot(0, 3),
   const FlSpot(2.6, 2),
@@ -23,17 +31,14 @@ List<FlSpot> testData = [
   const FlSpot(11, 4),
 ];
 
-Future testWindowFunctions() async {
-  await DesktopWindow.setWindowSize(const Size(800, 800));
+final Database database = LocalDatabase();
 
-  // await DesktopWindow.setMinWindowSize(Size(400, 400));
-  // await DesktopWindow.setMaxWindowSize(Size(800, 800));
-  //
-  // await DesktopWindow.resetMaxWindowSize();
-  // await DesktopWindow.toggleFullScreen();
-  // bool isFullScreen = await DesktopWindow.getFullScreen();
-  // await DesktopWindow.setFullScreen(true);
-  // await DesktopWindow.setFullScreen(false);
+Future updateWindowsPrefs() async {
+  if (defaultTargetPlatform == TargetPlatform.windows) {
+    await DesktopWindow.setWindowSize(const Size(1000, 1200));
+  } else {
+    logger.d("Skipping window resize because not on a Windows platform");
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -63,31 +68,19 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-// CoachLineChart chart = CoachLineChart(data: data);
-
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-  final io.File dataFile =
-      io.File('C:\\Users\\Rick\\Nextcloud\\BodyComposition_202307-202309.csv');
 
-  var data = [const FlSpot(0,0)];
+  var data = [const FlSpot(0, 0)];
+
+  // TODO: 10/7/2023 Test code, replace with user interactions after the code matures
+  Profile get profile => database.profiles().first;
 
   void _incrementCounter() {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
       _counter++;
       data.clear();
       data.addAll(testData);
-      if (defaultTargetPlatform == TargetPlatform.windows) {
-        testWindowFunctions();
-      } else {
-        logger.d("Skipping window resize because not on a Windows platform");
-      }
-      Importer().loadFile(dataFile);
     });
   }
 
@@ -98,12 +91,12 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      body: lineChart(context, _counter, CoachLineChart(data: data)),
+      body: lineChart(context, _counter, const CoachLineChart()),
       floatingActionButton: FloatingActionButton(
         onPressed: _incrementCounter,
         tooltip: 'Increment',
         child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      ),
     );
   }
 }

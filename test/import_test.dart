@@ -1,9 +1,13 @@
 import 'dart:io' as io;
 
-import 'package:coach/health_record.dart';
+import 'package:coach/database/database.dart';
+import 'package:coach/database/health_record.dart';
+import 'package:coach/database/local_database.dart';
+import 'package:coach/database/profile.dart';
 import 'package:coach/import.dart';
 import 'package:test/test.dart';
 
+// TODO: 10/7/2023 This whole test needs to be refactored to include Database changes
 void main() {
   test('Import data from CSV file', () {
     // TODO: Move this file into a test assets directory
@@ -11,7 +15,9 @@ void main() {
         'C:\\Users\\Rick\\Nextcloud\\BodyComposition_202307-202309.csv');
 
     List<String> lines = dataFile.readAsLinesSync();
-    List<HealthRecord> data = Importer().loadFile(dataFile);
+    Database database = LocalDatabase();
+    Profile profile = database.profiles().first;
+    List<HealthRecord> data = Importer(database).loadFile(dataFile, profile);
 
     expect(data.length, equals(lines.length - 1)); // because header is stripped
 

@@ -1,29 +1,36 @@
 import 'dart:io' as io;
 
-import 'package:coach/health_record.dart';
+import 'package:coach/database/database.dart';
+import 'package:coach/database/health_record.dart';
 import 'package:logger/logger.dart';
+
+import 'database/profile.dart';
 
 var logger = Logger(
   printer: PrettyPrinter(methodCount: 0),
 );
 
 class Importer {
-  List<HealthRecord> loadFile(io.File file) {
+  final Database database;
+
+  Importer(this.database);
+
+  List<HealthRecord> loadFile(io.File file, Profile profile) {
     if (file.existsSync()) {
-      return _processData(file.readAsLinesSync());
+      return _processData(file.readAsLinesSync(), profile);
     } else {
       throw Exception("File did not exist");
     }
   }
 
   /// Test method, used to learn Dart
-  List<HealthRecord> _processData(List<String> list) {
+  List<HealthRecord> _processData(List<String> list, profile) {
     var header = list.removeAt(0);
 
     var fields = header.split(',');
     if (fields.length == 17 && fields[16] == "\"Device\"") {
       logger.d("This is an Omron device");
-      return _importFromHBF702T(list);
+      return _importFromHBF702T(list, profile);
     } else {
       throw const FormatException("Unknown data format");
     }
@@ -31,7 +38,8 @@ class Importer {
 
   /// Import from HBF-702T.
   /// This expects the data list **only**, with the header stripped off.
-  List<HealthRecord> _importFromHBF702T(List<String> dataList) {
+  List<HealthRecord> _importFromHBF702T(
+      List<String> dataList, Profile profile) {
     // verify is for the HBF-702T
     if (dataList.isEmpty) {
       throw const FormatException("Import data was empty");
@@ -44,13 +52,13 @@ class Importer {
     }
 
     for (var element in dataList) {
-      healthDataList.add(_convertHBF702T(element));
+      healthDataList.add(_convertHBF702T(element, profile));
     }
 
     return healthDataList;
   }
 
-  HealthRecord _convertHBF702T(String dataLine) {
+  HealthRecord _convertHBF702T(String dataLine, Profile profile) {
     var elements = dataLine.split(",");
     var date = _extractDate(elements[0]);
     var weight = _extractDouble(elements[2]);
@@ -69,23 +77,24 @@ class Importer {
     var bodyAge = _extractDouble(elements[15]);
     var device = _stripQuotes(elements[16]);
 
-    HealthRecord data = HealthRecord(date, weight);
-    data.bodyFat = bodyFat;
-    data.visceralFat = visceralFat;
-    data.restingMetabolism = restingMetabolism;
-    data.skeletalMuscle = skeletalMuscle;
-    data.skeletalMuscleArms = skeletalMuscleArms;
-    data.skeletalMuscleTrunk = skeletalMuscleTrunk;
-    data.skeletalMuscleLegs = skeletalMuscleLegs;
-    data.subcutaneousFat = subcutaneousFat;
-    data.subcutaneousFatArms = subcutaneousFatArms;
-    data.subcutaneousFatTrunk = subcutaneousFatTrunk;
-    data.subcutaneousFatLegs = subcutaneousFatLegs;
-    data.bmi = bmi;
-    data.bodyAge = bodyAge;
-    data.device = device;
+    HealthRecord record = database.makeRecord(date, weight, profile);
+    record.bodyFat = bodyFat;
+    record.visceralFat = visceralFat;
+    record.restingMetabolism = restingMetabolism;
+    record.skeletalMuscle = skeletalMuscle;
+    record.skeletalMuscleArms = skeletalMuscleArms;
+    record.skeletalMuscleTrunk = skeletalMuscleTrunk;
+    record.skeletalMuscleLegs = skeletalMuscleLegs;
+    record.subcutaneousFat = subcutaneousFat;
+    record.subcutaneousFatArms = subcutaneousFatArms;
+    record.subcutaneousFatTrunk = subcutaneousFatTrunk;
+    record.subcutaneousFatLegs = subcutaneousFatLegs;
+    record.bmi = bmi;
+    record.bodyAge = bodyAge;
+    record.device = device;
+    database.updateRecord(record, profile);
 
-    return data;
+    return record;
   }
 
   DateTime _extractDate(String dateString) {
