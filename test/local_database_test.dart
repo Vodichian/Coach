@@ -55,6 +55,12 @@ void main() {
     expect(current, first);
     expect(database.profiles().length, 1);
     expect(notificationCount, 4);
+
+    first.birthday = DateTime(1980);
+    database.updateProfile(first);
+    current = database.currentProfile;
+    expect(current.birthday, first.birthday);
+    expect(notificationCount, 5);
   });
 }
 

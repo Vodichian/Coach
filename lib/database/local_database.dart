@@ -117,6 +117,9 @@ class LocalDatabase extends ChangeNotifier implements Database {
     });
   }
 
+  /// Clear the existing [Profile] objects from the database.
+  ///
+  /// Intended for testing, use with caution.
   void clearProfiles() {
     if (_profileDatabase is LocalProfileDatabase) {
       (_profileDatabase as LocalProfileDatabase).clear();
