@@ -5,16 +5,19 @@ import 'package:coach/database/no_such_profile_exception.dart';
 import 'package:coach/database/profile.dart';
 import 'package:logger/logger.dart';
 import 'package:test/test.dart';
-
-var logger = Logger(
-  printer: PrettyPrinter(methodCount: 0),
-);
+import 'package:path/path.dart' as p;
 
 void main() {
+  var logger = Logger(
+    printer: PrettyPrinter(methodCount: 0),
+  );
   late LocalProfileDatabase database;
+  final Directory testDirectory = Directory.systemTemp;
+  final File profileFile =
+      File(p.join(testDirectory.absolute.path, 'profiles.json'));
 
   setUp(() {
-    database = LocalProfileDatabase(File("profiles_test.json"));
+    database = LocalProfileDatabase(profileFile);
     database.addListener(wasFired);
     receivedCount = 0; // reset notification count
   });
