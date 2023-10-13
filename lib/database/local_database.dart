@@ -30,6 +30,8 @@ class LocalDatabase extends ChangeNotifier implements Database {
   late final File _recordsFile;
   final Uuid uuid = const Uuid();
 
+  bool _importMode = false;
+
   LocalDatabase(Directory directory) {
     String profilesPath = p.join(directory.absolute.path, 'profiles.json');
     File profilesFile = File(profilesPath);
@@ -68,11 +70,16 @@ class LocalDatabase extends ChangeNotifier implements Database {
     notifyListeners();
   }
 
+  /// Persists [_recordsFile] to the filesystem, triggering a change notification.
+  ///
+  /// Disabled by [_importMode].
   void _persist() {
-    String recordString = json.encode(_healthRecords,
-        toEncodable: (object) => HealthRecord.toJson(object));
-    _recordsFile.writeAsStringSync(recordString);
-    notifyListeners();
+    if (!_importMode) {
+      String recordString = json.encode(_healthRecords,
+          toEncodable: (object) => HealthRecord.toJson(object));
+      _recordsFile.writeAsStringSync(recordString);
+      notifyListeners();
+    }
   }
 
   @override
@@ -82,9 +89,10 @@ class LocalDatabase extends ChangeNotifier implements Database {
 
   @override
   void import(File importFile, Profile profile) {
+    _enableImportMode();
     var results = Importer(this).loadFile(importFile, profile);
     logger.d('Database> imported ${results.length} records into the database');
-    // TODO: 10/13/2023 Do I need a notifyListeners call here?
+    _disableImportMode();
   }
 
   @override
@@ -96,7 +104,8 @@ class LocalDatabase extends ChangeNotifier implements Database {
   HealthRecord makeRecord(DateTime date, double weight, Profile profile) {
     try {
       _findByDateWeightProfile(date, weight, profile);
-      throw DatabaseException("A record with the parameters [$date - $weight - ${profile.name}] already exists");
+      throw DatabaseException(
+          "A record with the parameters [$date - $weight - ${profile.name}] already exists");
     } on NoSuchRecordException {
       // doesn't exist, make a new record
       HealthRecord record = HealthRecord(uuid.v1(), date, weight, profile.id);
@@ -225,5 +234,20 @@ class LocalDatabase extends ChangeNotifier implements Database {
   @override
   List<HealthRecord> allRecords() {
     return _healthRecords.toList();
+  }
+
+  /// Puts database into import mode, blocking calls to _persist().
+  ///
+  /// Release this mode by calling [_disableImportMode].
+  void _enableImportMode() {
+    _importMode = true;
+  }
+
+  /// Takes the database out of import mode.
+  ///
+  /// Triggers a single call to [_persist] and allows its continued use.
+  void _disableImportMode() {
+    _importMode = false;
+    _persist();
   }
 }
