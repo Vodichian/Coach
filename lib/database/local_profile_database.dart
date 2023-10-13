@@ -22,21 +22,23 @@ class LocalProfileDatabase extends ProfileDatabase {
 
   void load() {
     _profiles.clear();
-    final contents = _profilesFile.readAsStringSync();
-    if (contents.isEmpty) return;
+    if (_profilesFile.existsSync()) {
+      final contents = _profilesFile.readAsStringSync();
+      if (contents.isEmpty) return;
 
-    List decodedList = jsonDecode(
-      contents,
-      reviver: (key, value) {
-        if (value is Map<String, dynamic>) {
-          return Profile.fromJson(value);
-        }
-        return value;
-      },
-    );
+      List decodedList = jsonDecode(
+        contents,
+        reviver: (key, value) {
+          if (value is Map<String, dynamic>) {
+            return Profile.fromJson(value);
+          }
+          return value;
+        },
+      );
 
-    for (var element in decodedList) {
-      _profiles.add(element);
+      for (var element in decodedList) {
+        _profiles.add(element);
+      }
     }
     notifyListeners();
   }

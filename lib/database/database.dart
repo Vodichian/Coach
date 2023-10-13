@@ -28,8 +28,7 @@ abstract class Database extends ChangeNotifier {
   /// Persists the modifications made to [record].
   ///
   /// Throws [NoSuchRecordException] if [record] is not found.
-  /// Throws [NoSuchProfileException] if [profile] is not found.
-  HealthRecord updateRecord(HealthRecord record, Profile profile);
+  HealthRecord updateRecord(HealthRecord record);
 
   /// Return a list of all persisted profiles.
   List<Profile> profiles();
@@ -39,6 +38,7 @@ abstract class Database extends ChangeNotifier {
 
   /// Removes [profile] from the database.
   ///
+  /// Removing the [Profile] will also remove all associated [HealthRecord] objects.
   /// Throws [NoSuchProfileException] if [profile] is not found.
   void removeProfile(Profile profile);
 
@@ -49,4 +49,10 @@ abstract class Database extends ChangeNotifier {
 
   /// Make [profile] the current [Profile]
   void makeProfileCurrent(Profile profile);
+
+  /// Return the current [Profile]
+  Profile currentProfile();
+
+  /// Returns all [HealthRecord] objects in the database.
+  List<HealthRecord> allRecords();
 }

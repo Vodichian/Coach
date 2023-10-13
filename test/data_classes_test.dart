@@ -14,9 +14,10 @@ void main() {
   test('Test HealthRecord', () {
     Uuid uuid = const Uuid();
     String id = uuid.v1();
+    String profileId = uuid.v1();
     DateTime date = DateTime.now();
     double weight = 80;
-    HealthRecord record = HealthRecord(id, date, weight);
+    HealthRecord record = HealthRecord(id, date, weight, profileId);
     var result = HealthRecord.toJson(record);
 
     HealthRecord rebuilt = HealthRecord.fromJson(result);

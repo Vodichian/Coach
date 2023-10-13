@@ -3,7 +3,8 @@
 
 class HealthRecord {
   static const String unknownDevice = "Unknown Device";
-  String id;
+  final String id;
+  final String profileId;
   DateTime date;
   double weight;
   double visceralFat = 0;
@@ -21,10 +22,11 @@ class HealthRecord {
   double bodyAge = 0;
   String device = unknownDevice;
 
-  HealthRecord(this.id, this.date, this.weight);
+  HealthRecord(this.id, this.date, this.weight, this.profileId);
 
   HealthRecord.fromJson(Map<String, dynamic> json)
       : id = json['id'],
+        profileId = json['profileId'],
         date = DateTime.parse(json['date']),
         weight = json['weight'],
         visceralFat = json['visceralFat'],
@@ -44,6 +46,7 @@ class HealthRecord {
 
   static Map<String, dynamic> toJson(HealthRecord record) => {
         'id': record.id,
+        'profileId': record.profileId,
         'date': record.date.toString(),
         'weight': record.weight,
         'visceralFat': record.visceralFat,
@@ -62,12 +65,33 @@ class HealthRecord {
         'device': record.device,
       };
 
+  /// Copies all parameters from [record] **except** id and profileId
+  void copyFrom(HealthRecord record) {
+    date = record.date;
+    weight = record.weight;
+    visceralFat = record.visceralFat;
+    bodyFat = record.bodyFat;
+    restingMetabolism = record.restingMetabolism;
+    skeletalMuscle = record.skeletalMuscle;
+    skeletalMuscleArms = record.skeletalMuscleArms;
+    skeletalMuscleTrunk = record.skeletalMuscleTrunk;
+    skeletalMuscleLegs = record.skeletalMuscleLegs;
+    subcutaneousFat = record.subcutaneousFat;
+    subcutaneousFatArms = record.subcutaneousFatArms;
+    subcutaneousFatTrunk = record.subcutaneousFatTrunk;
+    subcutaneousFatLegs = record.subcutaneousFatLegs;
+    bmi = record.bmi;
+    bodyAge = record.bodyAge;
+    device = record.device;
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is HealthRecord &&
           runtimeType == other.runtimeType &&
           id == other.id &&
+          profileId == other.profileId &&
           date == other.date &&
           weight == other.weight &&
           visceralFat == other.visceralFat &&
@@ -88,6 +112,7 @@ class HealthRecord {
   @override
   int get hashCode =>
       id.hashCode ^
+      profileId.hashCode ^
       date.hashCode ^
       weight.hashCode ^
       visceralFat.hashCode ^
@@ -107,6 +132,6 @@ class HealthRecord {
 
   @override
   String toString() {
-    return 'HealthRecord{id: $id, date: $date, weight: $weight, visceralFat: $visceralFat, bodyFat: $bodyFat, restingMetabolism: $restingMetabolism, skeletalMuscle: $skeletalMuscle, skeletalMuscleArms: $skeletalMuscleArms, skeletalMuscleTrunk: $skeletalMuscleTrunk, skeletalMuscleLegs: $skeletalMuscleLegs, subcutaneousFat: $subcutaneousFat, subcutaneousFatArms: $subcutaneousFatArms, subcutaneousFatTrunk: $subcutaneousFatTrunk, subcutaneousFatLegs: $subcutaneousFatLegs, bmi: $bmi, bodyAge: $bodyAge, device: $device}';
+    return 'HealthRecord{id: $id, profileId: $profileId, date: $date, weight: $weight, visceralFat: $visceralFat, bodyFat: $bodyFat, restingMetabolism: $restingMetabolism, skeletalMuscle: $skeletalMuscle, skeletalMuscleArms: $skeletalMuscleArms, skeletalMuscleTrunk: $skeletalMuscleTrunk, skeletalMuscleLegs: $skeletalMuscleLegs, subcutaneousFat: $subcutaneousFat, subcutaneousFatArms: $subcutaneousFatArms, subcutaneousFatTrunk: $subcutaneousFatTrunk, subcutaneousFatLegs: $subcutaneousFatLegs, bmi: $bmi, bodyAge: $bodyAge, device: $device}';
   }
 }

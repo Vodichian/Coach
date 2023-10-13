@@ -92,7 +92,7 @@ class Importer {
     record.bmi = bmi;
     record.bodyAge = bodyAge;
     record.device = device;
-    database.updateRecord(record, profile);
+    database.updateRecord(record);
 
     return record;
   }

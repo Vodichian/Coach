@@ -1,13 +1,17 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:coach/database/database.dart';
+import 'package:coach/database/database_exception.dart';
 import 'package:coach/database/health_record.dart';
 import 'package:coach/database/no_such_record_exception.dart';
 import 'package:coach/database/profile.dart';
 import 'package:coach/database/profile_database.dart';
 import 'package:coach/import.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
+import 'package:uuid/uuid.dart';
 import 'local_profile_database.dart';
 import 'package:path/path.dart' as p;
 
@@ -21,11 +25,10 @@ class LocalDatabase extends ChangeNotifier implements Database {
     printer: PrettyPrinter(methodCount: 0),
   );
 
-  final List<HealthRecord> healthRecords = [];
-  var allRecords = <Profile,
-      List<HealthRecord>>{}; // TODO: 10/9/2023 Finish creating this map
+  final List<HealthRecord> _healthRecords = [];
   late final ProfileDatabase _profileDatabase;
-  late final File recordsFile;
+  late final File _recordsFile;
+  final Uuid uuid = const Uuid();
 
   LocalDatabase(Directory directory) {
     String profilesPath = p.join(directory.absolute.path, 'profiles.json');
@@ -34,21 +37,54 @@ class LocalDatabase extends ChangeNotifier implements Database {
     _profileDatabase = LocalProfileDatabase(profilesFile);
 
     String recordsPath = p.join(directory.absolute.path, 'records.json');
-    recordsFile = File(recordsPath);
+    _recordsFile = File(recordsPath);
     logger.d("Setting database location to $recordsPath");
+    _load();
   }
 
-  Future<File> _persist() async {
-    throw UnimplementedError();
+  void _load() {
+    _healthRecords.clear();
+
+    if (_recordsFile.existsSync()) {
+      final contents = _recordsFile.readAsStringSync();
+
+      if (contents.isEmpty) return;
+
+      List decodedList = jsonDecode(
+        contents,
+        reviver: (key, value) {
+          if (value is Map<String, dynamic>) {
+            return HealthRecord.fromJson(value);
+          }
+          return value;
+        },
+      );
+
+      for (var element in decodedList) {
+        _healthRecords.add(element);
+      }
+    }
+
+    notifyListeners();
   }
 
-  Profile get currentProfile => _profileDatabase.currentProfile();
+  void _persist() {
+    String recordString = json.encode(_healthRecords,
+        toEncodable: (object) => HealthRecord.toJson(object));
+    _recordsFile.writeAsStringSync(recordString);
+    notifyListeners();
+  }
+
+  @override
+  Profile currentProfile() {
+    return _profileDatabase.currentProfile();
+  }
 
   // TODO: 10/9/2023 here for testing purposes, to be removed
   void initialize() {
     final File dataFile =
         File('C:\\Users\\Rick\\Nextcloud\\BodyComposition_202307-202309.csv');
-    Importer(this).loadFile(dataFile, currentProfile);
+    Importer(this).loadFile(dataFile, currentProfile());
     notifyListeners();
   }
 
@@ -60,14 +96,15 @@ class LocalDatabase extends ChangeNotifier implements Database {
   @override
   HealthRecord makeRecord(DateTime date, double weight, Profile profile) {
     try {
-      HealthRecord found = findByDateWeightProfile(date, weight, profile);
-    } on StateError {
-      // more than 1 match found, this should never happen
+      _findByDateWeightProfile(date, weight, profile);
+      throw DatabaseException("A record with these parameters already exists");
     } on NoSuchRecordException {
       // doesn't exist, make a new record
-      HealthRecord record = HealthRecord(profile.id, date, weight);
+      HealthRecord record = HealthRecord(uuid.v1(), date, weight, profile.id);
+      _healthRecords.add(record);
+      _persist();
+      return record;
     }
-    throw UnimplementedError();
   }
 
   @override
@@ -77,18 +114,44 @@ class LocalDatabase extends ChangeNotifier implements Database {
 
   @override
   List<HealthRecord> records(Profile profile) {
-    // TODO: implement records
-    throw UnimplementedError();
+    Profile actual = _profileDatabase.findById(profile.id);
+    return _healthRecords
+        .where((element) => element.profileId == actual.id)
+        .toList();
   }
 
   @override
   void removeProfile(Profile profile) {
+    var recordsToDelete = records(_profileDatabase.findById(profile.id));
+    if (recordsToDelete.isNotEmpty) {
+      for (var element in recordsToDelete) {
+        _healthRecords.remove(element);
+      }
+      _persist();
+    }
     _profileDatabase.remove(profile);
   }
 
   @override
   void removeRecord(HealthRecord record) {
-    // TODO: implement removeRecord
+    _healthRecords.remove(_findRecord(record));
+    _persist();
+  }
+
+  /// Returns matching record from the database
+  ///
+  /// Throws [NoSuchRecordException] if not found
+  /// Throws [StateError} if more than one match is found
+  HealthRecord _findRecord(HealthRecord record) {
+    try {
+      HealthRecord found = _healthRecords.singleWhere(
+          (element) => record == element,
+          orElse: () => throw NoSuchRecordException("Record not found"));
+      return found;
+    } on StateError {
+      throw DatabaseException(
+          "More than one match found, database is corrupted");
+    }
   }
 
   @override
@@ -97,30 +160,35 @@ class LocalDatabase extends ChangeNotifier implements Database {
   }
 
   @override
-  HealthRecord updateRecord(HealthRecord record, Profile profile) {
-    // TODO: implement updateRecord
-    throw UnimplementedError();
+  HealthRecord updateRecord(HealthRecord record) {
+    HealthRecord found = _findRecord(record);
+    found.copyFrom(record);
+    _persist();
+    return found;
   }
 
-  HealthRecord findByDateWeightProfile(
+  HealthRecord _findByDateWeightProfile(
       DateTime date, double weight, Profile profile) {
     List<HealthRecord> profileRecords = records(profile);
-    if (profileRecords.isEmpty) {
-      throw NoSuchRecordException(
-          "Record not found with $date, $weight, and $profile");
-    }
 
-    return profileRecords.singleWhere(
-        (element) => element.date == date && element.weight == weight,
-        orElse: () {
-      throw NoSuchRecordException("No matching record was found");
-    });
+    try {
+      HealthRecord record = profileRecords.singleWhere(
+          (element) => element.date == date && element.weight == weight,
+          orElse: () {
+        throw NoSuchRecordException(
+            "Record not found with $date, $weight, and $profile");
+      });
+      return record;
+    } on StateError {
+      throw DatabaseException(
+          "More than one match found, database is corrupted");
+    }
   }
 
   /// Clear the existing [Profile] objects from the database.
   ///
-  /// Intended for testing, use with caution.
-  void clearProfiles() {
+  /// Intended for testing, use with caution. **Does not clear [HealthRecord] data.**
+  void _clearProfiles() {
     if (_profileDatabase is LocalProfileDatabase) {
       (_profileDatabase as LocalProfileDatabase).clear();
     } else {
@@ -144,5 +212,19 @@ class LocalDatabase extends ChangeNotifier implements Database {
   void removeListener(VoidCallback listener) {
     _profileDatabase.removeListener(listener);
     super.removeListener(listener);
+  }
+
+  /// Clear all [HealthRecord] and [Profile]
+  ///
+  /// Intended for testing, use with caution.
+  void clear() {
+    _clearProfiles();
+    _healthRecords.clear();
+    _persist();
+  }
+
+  @override
+  List<HealthRecord> allRecords() {
+    return _healthRecords.toList();
   }
 }
