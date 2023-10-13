@@ -1,4 +1,3 @@
-import 'dart:io' as io;
 import 'dart:io';
 
 import 'package:coach/database/database.dart';
@@ -10,14 +9,11 @@ import 'package:test/test.dart';
 
 // TODO: 10/7/2023 This whole test needs to be refactored to include Database changes
 void main() {
-
   test('Import data from CSV file', () {
-    // TODO: Move this file into a test assets directory
-    io.File dataFile = io.File(
-        'C:\\Users\\Rick\\Nextcloud\\BodyComposition_202307-202309.csv');
+    File dataFile = File('test\\resources\\BodyComposition_202307-202309.csv');
 
     List<String> lines = dataFile.readAsLinesSync();
-    Directory tmpDirectory = Directory.systemTemp;
+    Directory tmpDirectory = Directory.systemTemp.createTempSync();
     Database database = LocalDatabase(tmpDirectory);
     (database as LocalDatabase).clear();
     Profile profile = database.makeProfile("test");

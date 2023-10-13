@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:coach/database/no_such_profile_exception.dart';
 import 'package:coach/database/no_such_record_exception.dart';
 import 'package:coach/database/profile.dart';
@@ -55,4 +57,7 @@ abstract class Database extends ChangeNotifier {
 
   /// Returns all [HealthRecord] objects in the database.
   List<HealthRecord> allRecords();
+
+  /// Imports [HealthRecord] data from [importFile] for the provided [profile].
+  void import(File importFile, Profile profile);
 }

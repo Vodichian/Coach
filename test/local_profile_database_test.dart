@@ -12,7 +12,7 @@ void main() {
     printer: PrettyPrinter(methodCount: 0),
   );
   late LocalProfileDatabase database;
-  final Directory testDirectory = Directory.systemTemp;
+  final Directory testDirectory = Directory.systemTemp.createTempSync();
   final File profileFile =
       File(p.join(testDirectory.absolute.path, 'profiles.json'));
 

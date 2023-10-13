@@ -1,6 +1,7 @@
 import 'dart:io' as io;
 
 import 'package:coach/database/database.dart';
+import 'package:coach/database/database_exception.dart';
 import 'package:coach/database/health_record.dart';
 import 'package:logger/logger.dart';
 
@@ -52,7 +53,11 @@ class Importer {
     }
 
     for (var element in dataList) {
-      healthDataList.add(_convertHBF702T(element, profile));
+      try {
+        healthDataList.add(_convertHBF702T(element, profile));
+      } on DatabaseException {
+        // logger.d('Record exists, skipping it: ${e.cause}');
+      }
     }
 
     return healthDataList;
@@ -77,6 +82,12 @@ class Importer {
     var bodyAge = _extractDouble(elements[15]);
     var device = _stripQuotes(elements[16]);
 
+    /// Current thoughts on collisions: Import does **not** overwrite existing
+    /// records, but if a matching record is found (by date, weight and profile),
+    /// it is skipped and an import on the next record is attempted.
+    ///
+    /// database.makeRecord will throw a DatabaseException in this case, so it
+    /// can be caught in the loop that calls this method.
     HealthRecord record = database.makeRecord(date, weight, profile);
     record.bodyFat = bodyFat;
     record.visceralFat = visceralFat;

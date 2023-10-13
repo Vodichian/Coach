@@ -80,12 +80,11 @@ class LocalDatabase extends ChangeNotifier implements Database {
     return _profileDatabase.currentProfile();
   }
 
-  // TODO: 10/9/2023 here for testing purposes, to be removed
-  void initialize() {
-    final File dataFile =
-        File('C:\\Users\\Rick\\Nextcloud\\BodyComposition_202307-202309.csv');
-    Importer(this).loadFile(dataFile, currentProfile());
-    notifyListeners();
+  @override
+  void import(File importFile, Profile profile) {
+    var results = Importer(this).loadFile(importFile, profile);
+    logger.d('Database> imported ${results.length} records into the database');
+    // TODO: 10/13/2023 Do I need a notifyListeners call here?
   }
 
   @override
@@ -97,7 +96,7 @@ class LocalDatabase extends ChangeNotifier implements Database {
   HealthRecord makeRecord(DateTime date, double weight, Profile profile) {
     try {
       _findByDateWeightProfile(date, weight, profile);
-      throw DatabaseException("A record with these parameters already exists");
+      throw DatabaseException("A record with the parameters [$date - $weight - ${profile.name}] already exists");
     } on NoSuchRecordException {
       // doesn't exist, make a new record
       HealthRecord record = HealthRecord(uuid.v1(), date, weight, profile.id);

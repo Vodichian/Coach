@@ -16,10 +16,9 @@ void main() {
   );
 
   late LocalDatabase database;
-  final Directory testDirectory = Directory.systemTemp;
+  final Directory testDirectory = Directory.systemTemp.createTempSync();
 
   setUp(() {
-    // logger.d("Directory: ${testDirectory.absolute}");
     database = LocalDatabase(testDirectory);
     database.clear();
     notificationCount = 0;
@@ -183,13 +182,34 @@ void main() {
   });
 
   test('Importing does not allow duplication of existing records', () {
-    /// Algorithm
-    /// *Note: the setup() method run before each test wipes the database and
-    /// its persisted records on the filesystem. Will need to load another database
-    /// instance after having added a few records, then perform import on that
-    /// instance to test this feature.
+    File dataFile = File('test/resources/BodyComposition_202307-202309.csv');
+    expect(dataFile.existsSync(), isTrue);
 
-    fail("test not implemented");
+    expect(database.allRecords(), isEmpty);
+    var profile = database.makeProfile("first");
+    database.import(dataFile, profile);
+    var allRecords = database.allRecords();
+    expect(allRecords, isNotEmpty);
+    var recordCount = allRecords.length;
+    logger.i('$recordCount records have been loaded');
+
+    /// do the import again, verify database remains unmodified
+    database.import(dataFile, profile);
+    expect(database.allRecords().length, recordCount); // unmodified
+
+    /// add a few records manually, redo import, verify remains unmodified
+    database.makeRecord(DateTime.now(), 88, profile);
+    database.makeRecord(DateTime.now(), 89, profile);
+    database.import(dataFile, profile);
+    expect(database.allRecords().length, recordCount + 2); // unmodified
+
+    /// Create a new profile, verify import into it works
+    var anotherProfile = database.makeProfile("another");
+    database.import(dataFile, anotherProfile);
+    expect(database.allRecords().length, (recordCount * 2) + 2);
+    expect(database.records(anotherProfile).length, recordCount);
+    logger.i(
+        'Total number of database notifications received: $notificationCount');
   });
 
   test('Database should return HealthRecords by Profile', () {
@@ -220,6 +240,9 @@ void main() {
     expect(database.records(secondProfile), secondList);
     expect(database.records(thirdProfile), thirdList);
     expect(database.records(emptyProfile), isEmpty);
+
+    logger.i(
+        'Total number of database notifications received: $notificationCount');
   });
 }
 
