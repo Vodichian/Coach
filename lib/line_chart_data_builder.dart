@@ -1,21 +1,29 @@
-
 import 'package:coach/app_colors.dart';
 import 'package:coach/database/health_record.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 
 class LineChartDataBuilder {
+  var logger = Logger(
+    printer: PrettyPrinter(methodCount: 0),
+  );
   static final List<Color> gradientColors = [
     AppColors.contentColorCyan,
     AppColors.contentColorBlue,
   ];
 
-  // List<FlSpot> data;
+  final List<Widget> _labelWidgets = [];
 
-
-  // LineChartData loadData(List<FlSpot> data) {
   LineChartData loadData(List<HealthRecord> records) {
+    logger.d("Loaded ${records.length} records");
     List<FlSpot> data = convert(records);
+    makeLabels(records.first, data);
+    // TODO: 10/14/2023 test code, replace with formal min/max extraction
+    double min = data.first.x;
+    double max = data.last.x;
+
+    logger.d('min = $min, max = $max');
     return LineChartData(
       gridData: FlGridData(
         show: true,
@@ -64,10 +72,10 @@ class LineChartDataBuilder {
         show: true,
         border: Border.all(color: const Color(0xff37434d)),
       ),
-      minX: 0,
-      maxX: 11,
-      minY: 0,
-      maxY: 7,
+      minX: min,
+      maxX: max,
+      minY: 60,
+      maxY: 85,
       lineBarsData: [
         LineChartBarData(
           spots: data,
@@ -98,30 +106,59 @@ class LineChartDataBuilder {
       fontWeight: FontWeight.bold,
       fontSize: 16,
     );
+    int index = value ~/ 7; // remainder intentionally lost
     Widget text;
-    switch (value.toInt()) {
-      case 0:
-        text = const Text('JAN', style: style);
-        break;
-      case 1:
-        text = const Text('FEB', style: style);
-        break;
-      case 2:
-        text = const Text('MAR', style: style);
-        break;
-      case 3:
-        text = const Text('APR', style: style);
-        break;
-      case 5:
-        text = const Text('JUN', style: style);
-        break;
-      case 8:
-        text = const Text('SEP', style: style);
-        break;
-      default:
-        text = const Text('', style: style);
-        break;
+    if (value % 7 == 0) {
+      text = _labelWidgets[index];
+    } else {
+      text = const Text("", style: style);
     }
+
+    // Widget text;
+    // switch (value.toInt()) {
+    //   case 0:
+    //     text = const Text('07/01', style: style);
+    //     break;
+    //   case 1:
+    //     text = const Text('07/08', style: style);
+    //     break;
+    //   case 2:
+    //     text = const Text('07/15', style: style);
+    //     break;
+    //   case 3:
+    //     text = const Text('07/22', style: style);
+    //     break;
+    //   case 4:
+    //     text = const Text('07/29', style: style);
+    //     break;
+    //   case 5:
+    //     text = const Text('08/05', style: style);
+    //     break;
+    //   case 6:
+    //     text = const Text('08/12', style: style);
+    //     break;
+    //   case 7:
+    //     text = const Text('08/19', style: style);
+    //     break;
+    //   case 8:
+    //     text = const Text('08/26', style: style);
+    //     break;
+    //   case 9:
+    //     text = const Text('09/02', style: style);
+    //     break;
+    //   case 10:
+    //     text = const Text('09/09', style: style);
+    //     break;
+    //   case 11:
+    //     text = const Text('09/16', style: style);
+    //     break;
+    //   case 12:
+    //     text = const Text('09/23', style: style);
+    //     break;
+    //   default:
+    //     text = const Text('', style: style);
+    //     break;
+    // }
 
     return SideTitleWidget(
       axisSide: meta.axisSide,
@@ -136,14 +173,35 @@ class LineChartDataBuilder {
     );
     String text;
     switch (value.toInt()) {
-      case 1:
-        text = '10K';
+      case 10:
+        text = '10';
         break;
-      case 3:
-        text = '30k';
+      case 20:
+        text = '20';
         break;
-      case 5:
-        text = '50k';
+      case 30:
+        text = '30';
+        break;
+      case 40:
+        text = '40';
+        break;
+      case 50:
+        text = '50';
+        break;
+      case 60:
+        text = '60';
+        break;
+      case 70:
+        text = '70';
+        break;
+      case 80:
+        text = '80';
+        break;
+      case 90:
+        text = '90';
+        break;
+      case 100:
+        text = '100';
         break;
       default:
         return Container();
@@ -154,10 +212,36 @@ class LineChartDataBuilder {
 
   List<FlSpot> convert(List<HealthRecord> records) {
     List<FlSpot> list = [];
+    if (records.isEmpty) return list;
+
+    /// normalize the x axis as time intervals starting from the first entry
+    var first = records.removeAt(0);
+    list.add(FlSpot(0, first.weight));
     for (var record in records) {
-      list.add(FlSpot(record.date.month as double, record.weight));
+      list.add(FlSpot(
+          record.date.difference(first.date).inDays.toDouble(), record.weight));
     }
+    logger.d("List: $list");
     return list;
   }
 
+  /// Generate labels for x-axis from [data]
+  void makeLabels(final HealthRecord first, List<FlSpot> data) {
+    if (data.isEmpty) return;
+    DateTime dayZero = first.date;
+    const style = TextStyle(
+      fontWeight: FontWeight.bold,
+      fontSize: 16,
+    );
+
+    String label = '${dayZero.month}/${dayZero.day}';
+    var widget = Text(label, style: style);
+    _labelWidgets.clear();
+    _labelWidgets.add(widget);
+    for (var i = 1; i < 12; i++) {
+      DateTime nextWeek = dayZero.add(Duration(days: 7 * i));
+      label = '${nextWeek.month}/${nextWeek.day}';
+      _labelWidgets.add(Text(label, style: style));
+    }
+  }
 }

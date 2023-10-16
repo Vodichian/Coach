@@ -1,37 +1,57 @@
-import 'package:coach/database/database.dart';
+import 'dart:io';
+
 import 'package:coach/database/local_database.dart';
-import 'package:coach/database/profile.dart';
 import 'package:coach/import.dart';
-import 'package:coach/line_chart.dart';
+import 'package:coach/coach_line_chart.dart';
 import 'package:desktop_window/desktop_window.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  LocalDatabase database = LocalDatabase();
+  database.load(await getDirectory());
+  // TODO: 10/13/2023 test code, remove
+  if (database.profiles().isEmpty) {
+    database.makeProfile("Rick");
+  }
+  database.import(
+      File(
+          "C:\\Users\\Rick\\Vodichian Projects\\Coach\\test\\resources\\BodyComposition_202307-202309.csv"),
+      database.currentProfile());
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => LocalDatabase(),
+    ChangeNotifierProvider.value(
+      value: database,
+      // create: (context) => LocalDatabase(),
       child: const MyApp(),
     ),
+    // ChangeNotifierProvider(
+    //   create: (context) => LocalDatabase(),
+    //   // create: (context) => LocalDatabase(),
+    //   child: const MyApp(),
+    // ),
   );
   logger.d("Platform is: $defaultTargetPlatform");
   updateWindowsPrefs();
 }
 
-// TODO: 10/6/2023 Replace with a Database method
-List<FlSpot> testData = [
-  const FlSpot(0, 3),
-  const FlSpot(2.6, 2),
-  const FlSpot(4.9, 5),
-  const FlSpot(6.8, 3.1),
-  const FlSpot(8, 4),
-  const FlSpot(9.5, 3),
-  const FlSpot(11, 4),
-];
+Future<Directory> getDirectory() {
+  return getApplicationDocumentsDirectory();
+}
 
-final Database database = LocalDatabase();
+// TODO: 10/6/2023 Replace with a Database method
+List<FlSpot> get testData => [
+      const FlSpot(0, 3),
+      const FlSpot(2.6, 2),
+      const FlSpot(4.9, 5),
+      const FlSpot(6.8, 3.1),
+      const FlSpot(8, 4),
+      const FlSpot(9.5, 3),
+      const FlSpot(11, 4),
+    ];
 
 Future updateWindowsPrefs() async {
   if (defaultTargetPlatform == TargetPlatform.windows) {
@@ -72,9 +92,6 @@ class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
   var data = [const FlSpot(0, 0)];
-
-  // TODO: 10/7/2023 Test code, replace with user interactions after the code matures
-  Profile get profile => database.profiles().first;
 
   void _incrementCounter() {
     setState(() {

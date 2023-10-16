@@ -32,7 +32,7 @@ class LocalDatabase extends ChangeNotifier implements Database {
 
   bool _importMode = false;
 
-  LocalDatabase(Directory directory) {
+  void load(Directory directory) {
     String profilesPath = p.join(directory.absolute.path, 'profiles.json');
     File profilesFile = File(profilesPath);
     logger.d("Loading profile database at $profilesPath");
@@ -41,10 +41,7 @@ class LocalDatabase extends ChangeNotifier implements Database {
     String recordsPath = p.join(directory.absolute.path, 'records.json');
     _recordsFile = File(recordsPath);
     logger.d("Setting database location to $recordsPath");
-    _load();
-  }
 
-  void _load() {
     _healthRecords.clear();
 
     if (_recordsFile.existsSync()) {

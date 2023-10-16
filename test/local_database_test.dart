@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:math';
 
-import 'package:coach/database/database.dart';
 import 'package:coach/database/database_exception.dart';
 import 'package:coach/database/health_record.dart';
 import 'package:coach/database/local_database.dart';
@@ -19,7 +18,8 @@ void main() {
   final Directory testDirectory = Directory.systemTemp.createTempSync();
 
   setUp(() {
-    database = LocalDatabase(testDirectory);
+    database = LocalDatabase();
+    database.load(testDirectory);
     database.clear();
     notificationCount = 0;
     database.addListener(wasFired);
@@ -74,7 +74,8 @@ void main() {
 
     /// Create a new Database loaded from the same file. This will verify the
     /// data has been persisted to the filesystem.
-    Database testLoadDatabase = LocalDatabase(testDirectory);
+    LocalDatabase testLoadDatabase = LocalDatabase();
+    testLoadDatabase.load(testDirectory);
     logger.i("Loading database from: ${testDirectory.absolute.path}");
     Profile current = testLoadDatabase.currentProfile();
     List<HealthRecord> toTestRecords = testLoadDatabase.records(current);
@@ -162,14 +163,16 @@ void main() {
     record.weight = ++record.weight;
 
     // not persisted, new database will not see changes
-    Database secondDatabase = LocalDatabase(testDirectory);
+    LocalDatabase secondDatabase = LocalDatabase();
+    secondDatabase.load(testDirectory);
     var secondDbProfile = secondDatabase.currentProfile();
     var secondDbRecord = secondDatabase.records(secondDbProfile).first;
     expect(record, isNot(secondDbRecord));
 
     // now persisted, new database will see changes
     database.updateRecord(record);
-    Database thirdDatabase = LocalDatabase(testDirectory);
+    LocalDatabase thirdDatabase = LocalDatabase();
+    thirdDatabase.load(testDirectory);
     var thirdDbProfile = thirdDatabase.currentProfile();
     var thirdDbRecord = thirdDatabase.records(thirdDbProfile).first;
     expect(record, thirdDbRecord);
@@ -177,7 +180,8 @@ void main() {
     database.removeRecord(record);
     expect(database.allRecords(), isEmpty);
 
-    Database fourthDatabase = LocalDatabase(testDirectory);
+    LocalDatabase fourthDatabase = LocalDatabase();
+    fourthDatabase.load(testDirectory);
     expect(fourthDatabase.allRecords(), isEmpty);
   });
 

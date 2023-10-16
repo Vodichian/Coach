@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:coach/database/database.dart';
 import 'package:coach/database/health_record.dart';
 import 'package:coach/database/local_database.dart';
 import 'package:coach/database/profile.dart';
@@ -14,8 +13,9 @@ void main() {
 
     List<String> lines = dataFile.readAsLinesSync();
     Directory tmpDirectory = Directory.systemTemp.createTempSync();
-    Database database = LocalDatabase(tmpDirectory);
-    (database as LocalDatabase).clear();
+    LocalDatabase database = LocalDatabase();
+    database.load(tmpDirectory);
+    database.clear();
     Profile profile = database.makeProfile("test");
     List<HealthRecord> data = Importer(database).loadFile(dataFile, profile);
 

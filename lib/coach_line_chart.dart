@@ -1,7 +1,10 @@
 import 'package:coach/app_colors.dart';
+import 'package:coach/database/health_record.dart';
+import 'package:coach/database/local_database.dart';
 import 'package:coach/line_chart_data_builder.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class CoachLineChart extends StatefulWidget {
   const CoachLineChart({super.key});
@@ -34,7 +37,8 @@ class _CoachLineChartState extends State<CoachLineChart> {
               bottom: 12,
             ),
             child: LineChart(
-              _builder.loadData(widget.records),
+              _builder.loadData(getData()),
+              // _builder.loadData(getData()),
             ),
           ),
         ),
@@ -58,5 +62,10 @@ class _CoachLineChartState extends State<CoachLineChart> {
         ),
       ],
     );
+  }
+
+  List<HealthRecord> getData() {
+    LocalDatabase database = context.read();
+    return database.records(database.currentProfile());
   }
 }
