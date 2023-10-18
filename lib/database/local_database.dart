@@ -11,9 +11,15 @@ import 'package:coach/import.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'local_profile_database.dart';
 import 'package:path/path.dart' as p;
+
+enum DatabaseState {
+  initializing,
+  running,
+}
 
 /// LocalDatabase
 ///
@@ -26,17 +32,26 @@ class LocalDatabase extends ChangeNotifier implements Database {
   );
 
   final List<HealthRecord> _healthRecords = [];
-  late final ProfileDatabase _profileDatabase;
-  late final File _recordsFile;
+  late ProfileDatabase _profileDatabase;
+  late File _recordsFile;
   final Uuid uuid = const Uuid();
+  DatabaseState _state = DatabaseState.initializing;
+  late Directory directory;
+
+  DatabaseState state() {
+    return _state;
+  }
 
   bool _importMode = false;
 
-  void load(Directory directory) {
+  Future<void> load(Directory directory) async {
     String profilesPath = p.join(directory.absolute.path, 'profiles.json');
     File profilesFile = File(profilesPath);
     logger.d("Loading profile database at $profilesPath");
     _profileDatabase = LocalProfileDatabase(profilesFile);
+    _profileDatabase.addListener(() {
+      notifyListeners();
+    });
 
     String recordsPath = p.join(directory.absolute.path, 'records.json');
     _recordsFile = File(recordsPath);
@@ -64,7 +79,12 @@ class LocalDatabase extends ChangeNotifier implements Database {
       }
     }
 
+    _state = DatabaseState.running;
     notifyListeners();
+  }
+
+  Future<Directory> getDirectory() {
+    return getApplicationDocumentsDirectory();
   }
 
   /// Persists [_recordsFile] to the filesystem, triggering a change notification.
@@ -205,18 +225,6 @@ class LocalDatabase extends ChangeNotifier implements Database {
   @override
   void makeProfileCurrent(Profile profile) {
     _profileDatabase.makeProfileCurrent(profile);
-  }
-
-  @override
-  void addListener(VoidCallback listener) {
-    _profileDatabase.addListener(listener);
-    super.addListener(listener);
-  }
-
-  @override
-  void removeListener(VoidCallback listener) {
-    _profileDatabase.removeListener(listener);
-    super.removeListener(listener);
   }
 
   /// Clear all [HealthRecord] and [Profile]

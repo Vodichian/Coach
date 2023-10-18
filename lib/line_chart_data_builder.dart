@@ -16,6 +16,9 @@ class LineChartDataBuilder {
   final List<Widget> _labelWidgets = [];
 
   LineChartData loadData(List<HealthRecord> records) {
+    if (records.isEmpty) {
+      return LineChartData();
+    }
     logger.d("Loaded ${records.length} records");
     List<FlSpot> data = convert(records);
     makeLabels(records.first, data);
@@ -113,52 +116,6 @@ class LineChartDataBuilder {
     } else {
       text = const Text("", style: style);
     }
-
-    // Widget text;
-    // switch (value.toInt()) {
-    //   case 0:
-    //     text = const Text('07/01', style: style);
-    //     break;
-    //   case 1:
-    //     text = const Text('07/08', style: style);
-    //     break;
-    //   case 2:
-    //     text = const Text('07/15', style: style);
-    //     break;
-    //   case 3:
-    //     text = const Text('07/22', style: style);
-    //     break;
-    //   case 4:
-    //     text = const Text('07/29', style: style);
-    //     break;
-    //   case 5:
-    //     text = const Text('08/05', style: style);
-    //     break;
-    //   case 6:
-    //     text = const Text('08/12', style: style);
-    //     break;
-    //   case 7:
-    //     text = const Text('08/19', style: style);
-    //     break;
-    //   case 8:
-    //     text = const Text('08/26', style: style);
-    //     break;
-    //   case 9:
-    //     text = const Text('09/02', style: style);
-    //     break;
-    //   case 10:
-    //     text = const Text('09/09', style: style);
-    //     break;
-    //   case 11:
-    //     text = const Text('09/16', style: style);
-    //     break;
-    //   case 12:
-    //     text = const Text('09/23', style: style);
-    //     break;
-    //   default:
-    //     text = const Text('', style: style);
-    //     break;
-    // }
 
     return SideTitleWidget(
       axisSide: meta.axisSide,
