@@ -225,6 +225,7 @@ class LocalDatabase extends ChangeNotifier implements Database {
   @override
   void makeProfileCurrent(Profile profile) {
     _profileDatabase.makeProfileCurrent(profile);
+    logger.d('"${profile.name}" is now the current profile');
   }
 
   /// Clear all [HealthRecord] and [Profile]
