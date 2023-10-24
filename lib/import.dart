@@ -7,11 +7,11 @@ import 'package:logger/logger.dart';
 
 import 'database/profile.dart';
 
-var logger = Logger(
-  printer: PrettyPrinter(methodCount: 0),
-);
-
 class Importer {
+  final logger = Logger(
+    printer: PrettyPrinter(methodCount: 0),
+  );
+
   final Database database;
 
   Importer(this.database);

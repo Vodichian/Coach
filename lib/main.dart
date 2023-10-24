@@ -3,14 +3,19 @@ import 'dart:io';
 
 import 'package:coach/database/health_record.dart';
 import 'package:coach/database/local_database.dart';
-import 'package:coach/import.dart';
 import 'package:coach/views/coach_line_chart.dart';
 import 'package:coach/views/profile_manager.dart';
 import 'package:desktop_window/desktop_window.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+
+
+var _logger = Logger(
+  printer: PrettyPrinter(methodCount: 0),
+);
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +27,7 @@ void main() {
       ),
     ),
   );
-  logger.d("Platform is: $defaultTargetPlatform");
+  _logger.d("Platform is: $defaultTargetPlatform");
   updateWindowsPrefs();
 }
 
@@ -30,7 +35,7 @@ Future updateWindowsPrefs() async {
   if (defaultTargetPlatform == TargetPlatform.windows) {
     await DesktopWindow.setWindowSize(const Size(1000, 1200));
   } else {
-    logger.d("Skipping window resize because not on a Windows platform");
+    _logger.d("Skipping window resize because not on a Windows platform");
   }
 }
 
@@ -180,7 +185,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<List<HealthRecord>> getRecords() async {
-    logger.d('getRecords called');
+    _logger.d('getRecords called');
     LocalDatabase database = context.read();
     if (database.state() == DatabaseState.running) {
       return database.records(database.currentProfile());
@@ -203,14 +208,14 @@ class _MyHomePageState extends State<MyHomePage> {
             if (snapshot.hasError) {
               var message =
                   'Error loading database: ${snapshot.error.toString()}';
-              logger.e(snapshot.stackTrace);
-              logger.e(message);
+              _logger.e(snapshot.stackTrace);
+              _logger.e(message);
               widget = Text(message);
             } else {
               if (snapshot.hasData) {
                 widget = lineChart(snapshot.data ?? []);
               } else {
-                logger.e("No data was returned");
+                _logger.e("No data was returned");
                 widget = const Text('No data was returned');
               }
             }
