@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:coach/database/health_record.dart';
 import 'package:coach/database/local_database.dart';
 import 'package:coach/views/coach_line_chart.dart';
+import 'package:coach/views/profile_editor.dart';
 import 'package:coach/views/profile_manager.dart';
 import 'package:desktop_window/desktop_window.dart';
 import 'package:flutter/foundation.dart';
@@ -11,7 +12,6 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-
 
 var _logger = Logger(
   printer: PrettyPrinter(methodCount: 0),
@@ -76,14 +76,16 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  get shouldShow => _selectedIndex == 0;
 
-  get shouldShow => _selectedIndex == 1;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
+  void _actionButtonPressed() {
+    // setState(() {});
+    if (_selectedIndex == 0) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const ProfileEditor()),
+      );
+    }
   }
 
   @override
@@ -176,8 +178,8 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       floatingActionButton: shouldShow
           ? FloatingActionButton(
-              onPressed: _incrementCounter,
-              tooltip: 'Increment',
+              onPressed: _actionButtonPressed,
+              tooltip: 'Create new profile',
               child: const Icon(Icons.add),
             )
           : null,
@@ -242,12 +244,9 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
             Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+              'Weight Chart',
+              style: Theme.of(context).textTheme.headlineLarge,
             ),
             chart,
           ],

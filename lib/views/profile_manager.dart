@@ -19,8 +19,23 @@ class _ProfileManagerState extends State<ProfileManager> {
   @override
   Widget build(BuildContext context) {
     return Center(
-        child: ListView(
-      children: _profileList(),
+        child: SizedBox(
+      width: 400,
+      child: Column(
+        children: [
+          const SizedBox(
+            height: 100,
+          ),
+          Text(
+            'Profiles',
+            style: Theme.of(context).textTheme.headlineLarge,
+          ),
+          ListView(
+            shrinkWrap: true,
+            children: _profileList(),
+          ),
+        ],
+      ),
     ));
   }
 

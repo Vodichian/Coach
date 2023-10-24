@@ -1,3 +1,4 @@
+import 'package:coach/views/profile_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
@@ -94,6 +95,10 @@ class _ProfileEditorStateState extends State<ProfileEditorState> {
                     if (_formKey.currentState!.validate()) {
                       // Process data.
                       logger.d('Name: ${nameController.text}');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ProfileManager()),
+                      );
                     }
                   },
                   child: const Text('Submit'),
