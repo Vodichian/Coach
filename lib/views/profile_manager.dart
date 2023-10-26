@@ -1,6 +1,7 @@
 import 'package:coach/database/local_database.dart';
 import 'package:coach/database/profile.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 
@@ -18,25 +19,35 @@ class ProfileManager extends StatefulWidget {
 class _ProfileManagerState extends State<ProfileManager> {
   @override
   Widget build(BuildContext context) {
-    return Center(
-        child: SizedBox(
-      width: 400,
-      child: Column(
-        children: [
-          const SizedBox(
-            height: 100,
-          ),
-          Text(
-            'Profiles',
-            style: Theme.of(context).textTheme.headlineLarge,
-          ),
-          ListView(
-            shrinkWrap: true,
-            children: _profileList(),
-          ),
-        ],
+    return Scaffold(
+      appBar: AppBar(title: const Text('Profiles')),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          GoRouter.of(context).push('/profiles/create_profile');
+        },
+        child: const Icon(Icons.add),
       ),
-    ));
+      body: Center(
+          child: SizedBox(
+        width: 400,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(
+              height: 100,
+            ),
+            Text(
+              'Select a profile:',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            ListView(
+              shrinkWrap: true,
+              children: _profileList(),
+            ),
+          ],
+        ),
+      )),
+    );
   }
 
   List<Widget> _profileList() {

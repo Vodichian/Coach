@@ -1,5 +1,6 @@
 import 'package:coach/views/profile_manager.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 
@@ -12,7 +13,16 @@ class ProfileEditor extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        appBar: AppBar(title: const Text('Form Sample')),
+        appBar: AppBar(
+          title: const Text('Create a new profile'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              // TODO: 10/26/2023 Add a confirmation step
+              GoRouter.of(context).pop();
+            },
+          ),
+        ),
         body: const ProfileEditorState(),
       ),
     );
@@ -46,7 +56,15 @@ class _ProfileEditorStateState extends State<ProfileEditorState> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              const SizedBox(height: 100,),
+              const SizedBox(
+                height: 100,
+              ),
+              Text('Account Details',
+                  style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(
+                height: 20,
+              ),
+
               /// Name field
               TextFormField(
                 decoration: const InputDecoration(
@@ -63,10 +81,12 @@ class _ProfileEditorStateState extends State<ProfileEditorState> {
                 },
                 controller: nameController,
               ),
+
               /// DoB field
               TextFormField(
                 decoration: const InputDecoration(
-                  hintText: 'Month and year of birth, for example: "January 1970"',
+                  hintText:
+                      'Month and year of birth, for example: "January 1970"',
                   icon: Icon(Icons.cake),
                 ),
                 validator: (String? value) {
@@ -97,7 +117,8 @@ class _ProfileEditorStateState extends State<ProfileEditorState> {
                       logger.d('Name: ${nameController.text}');
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const ProfileManager()),
+                        MaterialPageRoute(
+                            builder: (context) => const ProfileManager()),
                       );
                     }
                   },

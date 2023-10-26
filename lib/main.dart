@@ -1,37 +1,40 @@
-import 'dart:async';
-import 'dart:io';
-
-import 'package:coach/database/health_record.dart';
-import 'package:coach/database/local_database.dart';
-import 'package:coach/views/coach_line_chart.dart';
+import 'package:coach/views/loading_screen.dart';
 import 'package:coach/views/profile_editor.dart';
 import 'package:coach/views/profile_manager.dart';
+import 'package:coach/views/weight_chart.dart';
 import 'package:desktop_window/desktop_window.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
-var _logger = Logger(
+import 'database/local_database.dart';
+
+final Logger _logger = Logger(
   printer: PrettyPrinter(methodCount: 0),
 );
+
+final GlobalKey<NavigatorState> _rootNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'root');
+final GlobalKey<NavigatorState> _shellNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'shell');
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
-    ChangeNotifierProvider.value(
-      value: _database,
-      child: const MyApp(
+    ChangeNotifierProvider(
+      create: (context) => LocalDatabase(),
+      child: Coach(
         title: 'Coach',
       ),
     ),
   );
   _logger.d("Platform is: $defaultTargetPlatform");
-  updateWindowsPrefs();
+  _updateWindowsPrefs();
 }
 
-Future updateWindowsPrefs() async {
+Future _updateWindowsPrefs() async {
   if (defaultTargetPlatform == TargetPlatform.windows) {
     await DesktopWindow.setWindowSize(const Size(1000, 1200));
   } else {
@@ -39,253 +42,131 @@ Future updateWindowsPrefs() async {
   }
 }
 
-LocalDatabase _database = LocalDatabase();
-
-/// Main Widget
-class MyApp extends StatelessWidget {
-  const MyApp({super.key, required this.title});
-
+class Coach extends StatelessWidget {
   final String title;
 
-  // This widget is the root of your application.
+  Coach({super.key, required this.title});
+
+  final GoRouter _router = GoRouter(
+      navigatorKey: _rootNavigatorKey,
+      initialLocation: '/loading',
+      routes: [
+        ShellRoute(
+            navigatorKey: _shellNavigatorKey,
+            builder: (context, state, child) {
+              return ScaffoldWithNavBar(child: child);
+            },
+            routes: [
+              GoRoute(
+                  path: '/loading',
+                  builder: (context, state) {
+                    return const LoadingScreen(
+                      title: '',
+                    );
+                  }),
+              GoRoute(
+                  path: '/weightchart',
+                  builder: (context, state) {
+                    return const WeightChart();
+                  }),
+              GoRoute(
+                  path: '/profiles',
+                  builder: (context, state) {
+                    return const ProfileManager();
+                  },
+                  routes: <RouteBase>[
+                  GoRoute(
+                    path: 'create_profile',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) {
+                      return const ProfileEditor();
+                    },),
+                ]
+              ),
+              GoRoute(
+                  path: '/settings',
+                  builder: (context, state) {
+                    return const Center(
+                        child: Text('Settings route placeholder'));
+                  }),
+            ]),
+      ]);
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: title,
+    return MaterialApp.router(
+      title: 'Coach',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+        primarySwatch: Colors.blue,
       ),
-      home: LoadingScreen(
-        title: title,
-      ),
-      // home: const MyHomePage(title: 'Coach - Vodichian'),
+      routerConfig: _router,
     );
   }
 }
 
-/// Main Widget State
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+/// Builds the "shell" for the app by building a Scaffold with a
+/// BottomNavigationBar, where [child] is placed in the body of the Scaffold.
+class ScaffoldWithNavBar extends StatelessWidget {
+  /// Constructs an [ScaffoldWithNavBar].
+  const ScaffoldWithNavBar({
+    required this.child,
+    super.key,
+  });
 
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  get shouldShow => _selectedIndex == 0;
-
-  void _actionButtonPressed() {
-    // setState(() {});
-    if (_selectedIndex == 0) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const ProfileEditor()),
-      );
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadDatabase();
-  }
-
-  void _loadDatabase() async {
-    Directory directory = await getApplicationDocumentsDirectory();
-    setState(() {
-      _database.load(directory);
-    });
-  }
-
-  int _selectedIndex = 1;
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  Widget getSelected(int index) {
-    Widget widget;
-    switch (index) {
-      case 0:
-        widget = const ProfileManager();
-        break;
-      case 1:
-        widget = futureLineChart();
-        break;
-      default:
-        widget = const Text("Unknown page");
-    }
-    return widget;
-  }
+  /// The widget to display in the body of the Scaffold.
+  /// In this sample, it is a Navigator.
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+      body: child,
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.stacked_line_chart),
+            label: 'Weight Chart',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.manage_accounts),
+            label: 'Profiles',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+        ],
+        currentIndex: _calculateSelectedIndex(context),
+        onTap: (int idx) => _onItemTapped(idx, context),
       ),
-      body: Center(
-        child: getSelected(_selectedIndex),
-        // child: _widgetOptions[_selectedIndex],
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.blue,
-              ),
-              child: Text('Drawer Header'),
-            ),
-            ListTile(
-              title: const Text('Profiles'),
-              selected: _selectedIndex == 0,
-              onTap: () {
-                _onItemTapped(0);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: const Text('Weight Chart'),
-              selected: _selectedIndex == 1,
-              onTap: () {
-                // Update the state of the app
-                _onItemTapped(1);
-                // Then close the drawer
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: const Text('Settings'),
-              selected: _selectedIndex == 2,
-              onTap: () {
-                // Update the state of the app
-                _onItemTapped(2);
-                // Then close the drawer
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: shouldShow
-          ? FloatingActionButton(
-              onPressed: _actionButtonPressed,
-              tooltip: 'Create new profile',
-              child: const Icon(Icons.add),
-            )
-          : null,
     );
   }
 
-  Future<List<HealthRecord>> getRecords() async {
-    _logger.d('getRecords called');
-    LocalDatabase database = context.read();
-    if (database.state() == DatabaseState.running) {
-      return database.records(database.currentProfile());
-    } else {
-      return [];
+  static int _calculateSelectedIndex(BuildContext context) {
+    final String location = GoRouterState.of(context).uri.toString();
+    if (location.startsWith('/weight')) {
+      return 0;
     }
-  }
-
-  /// Builds a [CoachLineChart] wrapped in a [FutureBuilder]
-  Widget futureLineChart() {
-    return FutureBuilder(
-      builder: (context, snapshot) {
-        Widget widget;
-        switch (snapshot.connectionState) {
-          case ConnectionState.waiting:
-          case ConnectionState.active:
-            widget = const Text('Database is loading...');
-            break;
-          case ConnectionState.done:
-            if (snapshot.hasError) {
-              var message =
-                  'Error loading database: ${snapshot.error.toString()}';
-              _logger.e(snapshot.stackTrace);
-              _logger.e(message);
-              widget = Text(message);
-            } else {
-              if (snapshot.hasData) {
-                widget = lineChart(snapshot.data ?? []);
-              } else {
-                _logger.e("No data was returned");
-                widget = const Text('No data was returned');
-              }
-            }
-            break;
-          default:
-            widget =
-                Text('Unknown connection state: ${snapshot.connectionState}');
-            break;
-        }
-        return widget;
-      },
-      future: getRecords(),
-    );
-  }
-
-  /// Builds a CoachLineChart widget
-  Widget lineChart(List<HealthRecord> records) {
-    Widget widget;
-    if (records.isEmpty) {
-      widget = const Text("There are no records to display");
-    } else {
-      CoachLineChart chart = CoachLineChart(records: records);
-      widget = Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'Weight Chart',
-              style: Theme.of(context).textTheme.headlineLarge,
-            ),
-            chart,
-          ],
-        ),
-      );
+    if (location.startsWith('/profiles')) {
+      return 1;
     }
-    return widget;
-  }
-}
-
-/// An initial loading screen to give the database time to synchronize with the
-/// filesystem before being accessed.
-class LoadingScreen extends StatefulWidget {
-  const LoadingScreen({super.key, required this.title});
-
-  final String title;
-
-  @override
-  LoadingScreenState createState() => LoadingScreenState();
-}
-
-class LoadingScreenState extends State<LoadingScreen> {
-  @override
-  void initState() {
-    super.initState();
-    Timer(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (context) => MyHomePage(title: widget.title)));
-    });
+    if (location.startsWith('/settings')) {
+      return 2;
+    }
+    return 0;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+  void _onItemTapped(int index, BuildContext context) {
+    switch (index) {
+      case 0:
+        GoRouter.of(context).go('/weightchart');
+        break;
+      case 1:
+        GoRouter.of(context).go('/profiles');
+        break;
+      case 2:
+        GoRouter.of(context).go('/settings');
+        break;
+    }
   }
 }

@@ -1,5 +1,4 @@
-/// "Measurement Date","Timezone","Weight(kg)","Body Fat(%)","Visceral Fat","Resting Metabolism(kcal)","Skeletal Muscle(%)","Skeletal Muscle（ARMS）(%)","Skeletal Muscle（TRUNK）(%)","Skeletal Muscle（LEGS）(%)","Subcutaneous fat(%)","Subcutaneous fat（ARMS）(%)","Subcutaneous fat（TRUNK）(%)","Subcutaneous fat（LEGS）(%)","BMI","Body Age(years old)","Device"
-/// "2023/07/01 12:08","Asia/Ho_Chi_Minh","81.00","28.9","21.0","1736","28.3","33.6","20.7","45.7","20.9","25.9","19.5","26.4","31.6","62","HBF-702T"
+library;
 
 class HealthRecord {
   static const String unknownDevice = "Unknown Device";
