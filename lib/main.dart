@@ -1,4 +1,5 @@
 import 'package:coach/views/loading_screen.dart';
+import 'package:coach/views/profile_editor.dart';
 import 'package:coach/views/profile_manager.dart';
 import 'package:coach/views/weight_chart.dart';
 import 'package:desktop_window/desktop_window.dart';
@@ -72,7 +73,16 @@ class Coach extends StatelessWidget {
                   path: '/profiles',
                   builder: (context, state) {
                     return const ProfileManager();
-                  }),
+                  },
+                  routes: <RouteBase>[
+                  GoRoute(
+                    path: 'create_profile',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) {
+                      return const ProfileEditor();
+                    },),
+                ]
+              ),
               GoRoute(
                   path: '/settings',
                   builder: (context, state) {
