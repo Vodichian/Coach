@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 
+import 'database/database.dart';
 import 'database/local_database.dart';
 
 final Logger _logger = Logger(
@@ -24,7 +25,7 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
     ChangeNotifierProvider(
-      create: (context) => LocalDatabase(),
+      create: (context) => database(),
       child: Coach(
         title: 'Coach',
       ),
@@ -33,6 +34,8 @@ void main() {
   _logger.d("Platform is: $defaultTargetPlatform");
   _updateWindowsPrefs();
 }
+
+Database database() => LocalDatabase();
 
 Future _updateWindowsPrefs() async {
   if (defaultTargetPlatform == TargetPlatform.windows) {
@@ -75,14 +78,14 @@ class Coach extends StatelessWidget {
                     return const ProfileManager();
                   },
                   routes: <RouteBase>[
-                  GoRoute(
-                    path: 'create_profile',
-                    parentNavigatorKey: _rootNavigatorKey,
-                    builder: (context, state) {
-                      return const ProfileEditor();
-                    },),
-                ]
-              ),
+                    GoRoute(
+                      path: 'create_profile',
+                      parentNavigatorKey: _rootNavigatorKey,
+                      builder: (context, state) {
+                        return const ProfileEditor();
+                      },
+                    ),
+                  ]),
               GoRoute(
                   path: '/settings',
                   builder: (context, state) {

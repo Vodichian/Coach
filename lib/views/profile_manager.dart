@@ -1,9 +1,10 @@
-import 'package:coach/database/local_database.dart';
 import 'package:coach/database/profile.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
+
+import '../database/database.dart';
 
 var _logger = Logger(
   printer: PrettyPrinter(methodCount: 0),
@@ -51,7 +52,7 @@ class _ProfileManagerState extends State<ProfileManager> {
   }
 
   List<Widget> _profileList() {
-    LocalDatabase database = context.read();
+    Database database = context.read();
     return database.profiles().map((e) => _toText(e)).toList();
   }
 
@@ -66,7 +67,7 @@ class _ProfileManagerState extends State<ProfileManager> {
   }
 
   _makeCurrent(Profile profile) {
-    LocalDatabase database = context.read();
+    Database database = context.read();
     _logger.d('Setting profile "${profile.name} to current');
     database.makeProfileCurrent(profile);
   }

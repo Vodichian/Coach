@@ -3,40 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
 
-void main() => runApp(const ProfileEditor());
+import '../database/database.dart';
+import '../database/profile.dart';
 
-class ProfileEditor extends StatelessWidget {
+class ProfileEditor extends StatefulWidget {
   const ProfileEditor({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Create a new profile'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              // TODO: 10/26/2023 Add a confirmation step
-              GoRouter.of(context).pop();
-            },
-          ),
-        ),
-        body: const ProfileEditorState(),
-      ),
-    );
-  }
+  State<ProfileEditor> createState() => _ProfileEditorState();
 }
 
-class ProfileEditorState extends StatefulWidget {
-  const ProfileEditorState({super.key});
-
-  @override
-  State<ProfileEditorState> createState() => _ProfileEditorStateState();
-}
-
-class _ProfileEditorStateState extends State<ProfileEditorState> {
+class _ProfileEditorState extends State<ProfileEditor> {
   var logger = Logger(
     printer: PrettyPrinter(methodCount: 0),
   );
@@ -48,84 +27,111 @@ class _ProfileEditorStateState extends State<ProfileEditorState> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: SizedBox(
-        width: 400,
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              const SizedBox(
-                height: 100,
-              ),
-              Text('Account Details',
-                  style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(
-                height: 20,
-              ),
-
-              /// Name field
-              TextFormField(
-                decoration: const InputDecoration(
-                  hintText: 'Enter your name',
-                  labelText: 'Name:',
-                  filled: true,
-                  icon: Icon(Icons.account_circle),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Create a new profile'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            // TODO: 10/26/2023 Add a confirmation step
+            GoRouter.of(context).pop();
+          },
+        ),
+      ),
+      body: Center(
+        child: SizedBox(
+          width: 400,
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const SizedBox(
+                  height: 100,
                 ),
-                validator: (String? value) {
-                  if (value == null || value.isEmpty) {
-                    return 'A name for your profile is required';
-                  }
-                  return null;
-                },
-                controller: nameController,
-              ),
-
-              /// DoB field
-              TextFormField(
-                decoration: const InputDecoration(
-                  hintText:
-                      'Month and year of birth, for example: "January 1970"',
-                  icon: Icon(Icons.cake),
+                Text('Account Details',
+                    style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(
+                  height: 20,
                 ),
-                validator: (String? value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Date of birth is required for health calculations';
-                  } else {
-                    try {
-                      if (format.parse(value).isAfter(DateTime.now())) {
-                        return 'This date is in the future';
-                      } else {
-                        return null;
+
+                /// Name field
+                TextFormField(
+                  decoration: const InputDecoration(
+                    hintText: 'Enter your name',
+                    labelText: 'Name:',
+                    filled: true,
+                    icon: Icon(Icons.account_circle),
+                  ),
+                  validator: (String? value) {
+                    if (value == null || value.isEmpty) {
+                      return 'A name for your profile is required';
+                    } else {
+                      /// verify name doesn't already exist
+                      Database database = context.read();
+                      bool found = database
+                          .profiles()
+                          .where((element) =>
+                              element.name.toLowerCase() == value.toLowerCase())
+                          .isNotEmpty;
+                      if (found) {
+                        return 'The name "$value" already exists';
                       }
-                    } on FormatException {
-                      return 'Not a valid date';
                     }
-                  }
-                },
-                controller: dateController,
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Validate will return true if the form is valid, or false if
-                    // the form is invalid.
-                    if (_formKey.currentState!.validate()) {
-                      // Process data.
-                      logger.d('Name: ${nameController.text}');
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const ProfileManager()),
-                      );
+                    return null;
+                  },
+                  controller: nameController,
+                ),
+
+                /// DoB field
+                TextFormField(
+                  decoration: const InputDecoration(
+                    hintText: 'Birth date, i.e. "January 1970"',
+                    icon: Icon(Icons.cake),
+                  ),
+                  validator: (String? value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Date of birth is required for health calculations';
+                    } else {
+                      try {
+                        if (format.parse(value).isAfter(DateTime.now())) {
+                          return 'This date is in the future';
+                        } else {
+                          return null;
+                        }
+                      } on FormatException {
+                        return 'Not a valid date';
+                      }
                     }
                   },
-                  child: const Text('Submit'),
+                  controller: dateController,
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Validate will return true if the form is valid, or false if
+                      // the form is invalid.
+                      if (_formKey.currentState!.validate()) {
+                        Database database = context.read();
+                        DateTime date = format.parse(dateController.text);
+                        Profile profile =
+                            database.makeProfile(nameController.text);
+                        profile.birthday = date;
+                        database.updateProfile(profile);
+                        logger.d('Name: ${nameController.text}');
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const ProfileManager()),
+                        );
+                      }
+                    },
+                    child: const Text('Submit'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

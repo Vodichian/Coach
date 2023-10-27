@@ -38,6 +38,7 @@ class LocalDatabase extends ChangeNotifier implements Database {
   DatabaseState _state = DatabaseState.initializing;
   late Directory directory;
 
+  @override
   DatabaseState state() {
     return _state;
   }

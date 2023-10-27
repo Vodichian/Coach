@@ -60,4 +60,6 @@ abstract class Database extends ChangeNotifier {
 
   /// Imports [HealthRecord] data from [importFile] for the provided [profile].
   void import(File importFile, Profile profile);
+
+  state();
 }
