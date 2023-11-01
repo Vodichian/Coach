@@ -30,24 +30,27 @@ class _ProfileManagerState extends State<ProfileManager> {
       ),
       body: Center(
           child: SizedBox(
-        width: 400,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(
-              height: 100,
+            width: 400,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(
+                  height: 100,
+                ),
+                Text(
+                  'Select a profile:',
+                  style: Theme
+                      .of(context)
+                      .textTheme
+                      .headlineSmall,
+                ),
+                ListView(
+                  shrinkWrap: true,
+                  children: _profileList(),
+                ),
+              ],
             ),
-            Text(
-              'Select a profile:',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            ListView(
-              shrinkWrap: true,
-              children: _profileList(),
-            ),
-          ],
-        ),
-      )),
+          )),
     );
   }
 
@@ -59,10 +62,11 @@ class _ProfileManagerState extends State<ProfileManager> {
   Widget _toText(Profile profile) {
     Widget widget = Card(
         child: ListTile(
-      title: Text(profile.name),
-      onTap: () => _makeCurrent(profile),
-      leading: const Icon(Icons.account_circle),
-    ));
+          title: Text(profile.name),
+          onTap: () => _makeCurrent(profile),
+          onLongPress: () => showMenuExample(context),
+          leading: const Icon(Icons.account_circle),
+        ));
     return widget;
   }
 
@@ -70,5 +74,43 @@ class _ProfileManagerState extends State<ProfileManager> {
     Database database = context.read();
     _logger.d('Setting profile "${profile.name} to current');
     database.makeProfileCurrent(profile);
+  }
+
+  // TODO: 10/28/2023 Taken from MS Copilot, need to rework, reposition over list item
+  void showMenuExample(BuildContext context) {
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final RenderBox overlay =
+    Overlay
+        .of(context)
+        .context
+        .findRenderObject() as RenderBox;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(button.size.bottomRight(Offset.zero),
+            ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    showMenu<int>(
+      context: context,
+      position: position,
+      items: <PopupMenuEntry<int>>[
+        const PopupMenuItem<int>(
+          value: 0,
+          child: Text('Option 1'),
+        ),
+        const PopupMenuItem<int>(
+          value: 1,
+          child: Text('Option 2'),
+        ),
+      ],
+    ).then<void>((int? selectedValue) {
+      if (selectedValue == null) return;
+
+      // Handle the selected value
+      print('Selected value: $selectedValue');
+    });
   }
 }

@@ -138,32 +138,3 @@ class _ProfileEditorState extends State<ProfileEditor> {
     );
   }
 }
-
-// class BasicDateField extends StatelessWidget {
-//   final format = DateFormat("yyyy-MM-dd");
-//
-//   BasicDateField({super.key});
-//   @override
-//   Widget build(BuildContext context) {
-//     return Column(children: <Widget>[
-//       Text('Basic date field (${format.pattern})'),
-//       DateTimeField(
-//         format: format,
-//         validator: (DateTime? value) {
-//           if (value == null || value.isAfter(DateTime.now())) {
-//             return 'A valid date is required';
-//           }
-//           return null;
-//         },
-//         onShowPicker: (context, currentValue) {
-//           return showDatePicker(
-//               context: context,
-//               firstDate: DateTime(1900),
-//               initialDate: currentValue ?? DateTime.now(),
-//               lastDate: DateTime(2100));
-//         },
-//         controller: dateController,
-//       ),
-//     ]);
-//   }
-// }
