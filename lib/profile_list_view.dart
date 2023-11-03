@@ -4,12 +4,13 @@ import 'package:logger/logger.dart';
 import 'database/profile.dart';
 
 class _ExpandingListItem extends StatefulWidget {
-  const _ExpandingListItem(
-      {required this.onEdit,
-      required this.onDelete,
-      this.open = false,
-      required this.onToggle,
-      required this.profile});
+  const _ExpandingListItem({
+    required this.onEdit,
+    required this.onDelete,
+    this.open = false,
+    required this.onToggle,
+    required this.profile,
+  });
 
   final void Function() onEdit;
   final void Function() onDelete;
@@ -43,7 +44,8 @@ class _ExpandingListItemState extends State<_ExpandingListItem> {
   Widget build(BuildContext context) {
     return Card(
         child: ListTile(
-      onTap: () => {_logger.i('replace me with a function')},
+      onTap: () =>
+      {_logger.d('Figure out how to wire this to the calling class')},
       title: Text(widget.profile.name),
       trailing: getOpen() ? _openMenu() : _closedMenu(),
     ));
@@ -91,12 +93,20 @@ class _ExpandingListItemState extends State<_ExpandingListItem> {
 
 /// ProfileListView
 class ProfileListView extends StatefulWidget {
-  const ProfileListView({super.key, required this.items});
+  const ProfileListView({
+    super.key,
+    required this.items,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   final List<Profile> items;
 
   @override
   State<StatefulWidget> createState() => _ProfileListViewState();
+
+  final void Function(Profile) onEdit;
+  final void Function(Profile) onDelete;
 }
 
 /// State for ProfileListView
@@ -106,18 +116,18 @@ class _ProfileListViewState extends State<ProfileListView> {
   @override
   Widget build(BuildContext context) {
     return ListView(
+      shrinkWrap: true,
       children: _toExpandingListItems(widget.items),
     );
   }
 
   List<Widget> _toExpandingListItems(List<Profile> items) {
-    _logger.d('Items: $items');
     List<Widget> list = items
         .map(
           (e) => _ExpandingListItem(
             profile: e,
-            onEdit: () => onEdit(e),
-            onDelete: () => onDelete(e),
+            onEdit: () => widget.onEdit(e),
+            onDelete: () => widget.onDelete(e),
             onToggle: (isOpen) => onOpen(isOpen, e),
             open: _requestOpenProfile == e,
           ),
@@ -127,16 +137,7 @@ class _ProfileListViewState extends State<ProfileListView> {
     return list;
   }
 
-  onEdit(Profile e) {
-    _logger.d('onEdit clicked for $e');
-  }
-
-  onDelete(Profile e) {
-    _logger.d('onDelete clicked for $e');
-  }
-
   onOpen(bool isOpen, Profile e) {
-    _logger.d(('onOpen called for $e'));
     setState(() {
       isOpen ? _requestOpenProfile = e : _requestOpenProfile = null;
     });
@@ -182,8 +183,24 @@ class _MyHomePage extends StatelessWidget {
       appBar: AppBar(
         title: Text(title),
       ),
-      body: ProfileListView(items: items),
+      body: ProfileListView(
+        items: items,
+        onEdit: onEdit,
+        onDelete: onDelete,
+      ),
     );
+  }
+
+  onEdit(Profile e) {
+    _logger.d('onEdit clicked for $e');
+  }
+
+  onDelete(Profile e) {
+    _logger.d('onDelete clicked for $e');
+  }
+
+  onTap(Profile e) {
+    _logger.d('onTap pressed for $e');
   }
 }
 

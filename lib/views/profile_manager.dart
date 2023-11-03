@@ -1,4 +1,5 @@
 import 'package:coach/database/profile.dart';
+import 'package:coach/profile_list_view.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
@@ -30,87 +31,61 @@ class _ProfileManagerState extends State<ProfileManager> {
       ),
       body: Center(
           child: SizedBox(
-            width: 400,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(
-                  height: 100,
-                ),
-                Text(
-                  'Select a profile:',
-                  style: Theme
-                      .of(context)
-                      .textTheme
-                      .headlineSmall,
-                ),
-                ListView(
-                  shrinkWrap: true,
-                  children: _profileList(),
-                ),
-              ],
+        width: 400,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(
+              height: 100,
             ),
-          )),
+            Text(
+              'Select a profile:',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            Consumer<Database>(
+                builder: (context, database, child) => ProfileListView(
+                      items: database.profiles(),
+                      onEdit: _onEdit,
+                      onDelete: _onDelete,
+                    ))
+          ],
+        ),
+      )),
     );
   }
 
-  List<Widget> _profileList() {
-    Database database = context.read();
-    return database.profiles().map((e) => _toText(e)).toList();
+  _onEdit(Profile profile) {
+    _logger.d('_onEdit called for $profile');
   }
 
-  Widget _toText(Profile profile) {
-    Widget widget = Card(
-        child: ListTile(
-          title: Text(profile.name),
-          onTap: () => _makeCurrent(profile),
-          onLongPress: () => showMenuExample(context),
-          leading: const Icon(Icons.account_circle),
-        ));
-    return widget;
+  _onDelete(Profile profile) {
+    _logger.d('_onDelete called for $profile');
+    Database database = context.read();
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Delete Confirmation'),
+            content: Text('Really delete "${profile.name}"?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                  onPressed: () {
+                    database.removeProfile(profile);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Ok')),
+            ],
+          );
+        });
   }
 
   _makeCurrent(Profile profile) {
     Database database = context.read();
     _logger.d('Setting profile "${profile.name} to current');
     database.makeProfileCurrent(profile);
-  }
-
-  // TODO: 10/28/2023 Taken from MS Copilot, need to rework, reposition over list item
-  void showMenuExample(BuildContext context) {
-    final RenderBox button = context.findRenderObject() as RenderBox;
-    final RenderBox overlay =
-    Overlay
-        .of(context)
-        .context
-        .findRenderObject() as RenderBox;
-    final RelativeRect position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        button.localToGlobal(Offset.zero, ancestor: overlay),
-        button.localToGlobal(button.size.bottomRight(Offset.zero),
-            ancestor: overlay),
-      ),
-      Offset.zero & overlay.size,
-    );
-
-    showMenu<int>(
-      context: context,
-      position: position,
-      items: <PopupMenuEntry<int>>[
-        const PopupMenuItem<int>(
-          value: 0,
-          child: Text('Option 1'),
-        ),
-        const PopupMenuItem<int>(
-          value: 1,
-          child: Text('Option 2'),
-        ),
-      ],
-    ).then<void>((int? selectedValue) {
-      if (selectedValue == null) return;
-
-      // Handle the selected value
-      print('Selected value: $selectedValue');
-    });
   }
 }
