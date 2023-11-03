@@ -10,11 +10,13 @@ class _ExpandingListItem extends StatefulWidget {
     this.open = false,
     required this.onToggle,
     required this.profile,
+    required this.onTap,
   });
 
   final void Function() onEdit;
   final void Function() onDelete;
   final void Function(bool) onToggle;
+  final void Function() onTap;
   final bool open;
   final Profile profile;
 
@@ -44,8 +46,7 @@ class _ExpandingListItemState extends State<_ExpandingListItem> {
   Widget build(BuildContext context) {
     return Card(
         child: ListTile(
-      onTap: () =>
-      {_logger.d('Figure out how to wire this to the calling class')},
+      onTap: widget.onTap,
       title: Text(widget.profile.name),
       trailing: getOpen() ? _openMenu() : _closedMenu(),
     ));
@@ -98,6 +99,7 @@ class ProfileListView extends StatefulWidget {
     required this.items,
     required this.onEdit,
     required this.onDelete,
+    required this.onTap,
   });
 
   final List<Profile> items;
@@ -107,6 +109,7 @@ class ProfileListView extends StatefulWidget {
 
   final void Function(Profile) onEdit;
   final void Function(Profile) onDelete;
+  final void Function(Profile) onTap;
 }
 
 /// State for ProfileListView
@@ -130,6 +133,7 @@ class _ProfileListViewState extends State<ProfileListView> {
             onDelete: () => widget.onDelete(e),
             onToggle: (isOpen) => onOpen(isOpen, e),
             open: _requestOpenProfile == e,
+            onTap: () => widget.onTap(e),
           ),
         )
         .toList();
@@ -187,6 +191,7 @@ class _MyHomePage extends StatelessWidget {
         items: items,
         onEdit: onEdit,
         onDelete: onDelete,
+        onTap: onTap,
       ),
     );
   }

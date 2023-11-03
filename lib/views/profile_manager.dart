@@ -47,6 +47,7 @@ class _ProfileManagerState extends State<ProfileManager> {
                       items: database.profiles(),
                       onEdit: _onEdit,
                       onDelete: _onDelete,
+                      onTap: _makeCurrent,
                     ))
           ],
         ),
