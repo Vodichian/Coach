@@ -1,3 +1,4 @@
+import 'package:coach/database/profile.dart';
 import 'package:coach/views/loading_screen.dart';
 import 'package:coach/views/profile_editor.dart';
 import 'package:coach/views/profile_manager.dart';
@@ -83,6 +84,13 @@ class Coach extends StatelessWidget {
                       parentNavigatorKey: _rootNavigatorKey,
                       builder: (context, state) {
                         return const ProfileEditor();
+                      },
+                    ),
+                    GoRoute(
+                      path: 'edit_profile',
+                      parentNavigatorKey: _rootNavigatorKey,
+                      builder: (context, state) {
+                        return ProfileEditor(profile: state.extra as Profile,);
                       },
                     ),
                   ]),

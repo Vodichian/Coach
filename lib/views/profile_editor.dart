@@ -1,4 +1,3 @@
-import 'package:coach/views/profile_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -9,7 +8,11 @@ import '../database/database.dart';
 import '../database/profile.dart';
 
 class ProfileEditor extends StatefulWidget {
-  const ProfileEditor({super.key});
+  final Profile? profile;
+
+  const ProfileEditor({super.key, this.profile});
+
+  get isEditMode => profile != null;
 
   @override
   State<ProfileEditor> createState() => _ProfileEditorState();
@@ -26,15 +29,50 @@ class _ProfileEditorState extends State<ProfileEditor> {
   final format = DateFormat("MMMM yyyy");
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.isEditMode) {
+      nameController.text = widget.profile!.name;
+      DateTime date = widget.profile!.birthday;
+      dateController.text = format.format(date);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create a new profile'),
+        title: widget.isEditMode
+            ? Text('Editing profile "${widget.profile?.name}"')
+            : const Text('Create a new profile'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            // TODO: 10/26/2023 Add a confirmation step
-            GoRouter.of(context).pop();
+            showDialog(context: context, builder: (builderContext) {
+              return AlertDialog(
+                title: const Text('Confirmation'),
+                content: const Text('Really abandon changes?'),
+                actions: [
+                  // Yes
+                  TextButton(
+                      onPressed: () {
+                        /// close dialog
+                        GoRouter.of(context).pop();
+                        /// navigate back to parent route
+                        GoRouter.of(context).pop();
+                      },
+                      child: const Text('Yes')),
+                  // No
+                  TextButton(
+                    onPressed: () {
+                      // Close the dialog
+                      GoRouter.of(context).pop();
+                    },
+                    child: const Text('Cancel'),
+                  )
+                ],
+              );
+            },);
           },
         ),
       ),
@@ -66,7 +104,7 @@ class _ProfileEditorState extends State<ProfileEditor> {
                   validator: (String? value) {
                     if (value == null || value.isEmpty) {
                       return 'A name for your profile is required';
-                    } else {
+                    } else if (!widget.isEditMode) {
                       /// verify name doesn't already exist
                       Database database = context.read();
                       bool found = database
@@ -108,6 +146,7 @@ class _ProfileEditorState extends State<ProfileEditor> {
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  /// Submit Button
                   child: ElevatedButton(
                     onPressed: () {
                       // Validate will return true if the form is valid, or false if
@@ -115,16 +154,18 @@ class _ProfileEditorState extends State<ProfileEditor> {
                       if (_formKey.currentState!.validate()) {
                         Database database = context.read();
                         DateTime date = format.parse(dateController.text);
-                        Profile profile =
-                            database.makeProfile(nameController.text);
+                        Profile profile;
+                        if (widget.isEditMode) {
+                          profile = widget.profile!;
+                        } else {
+                          profile = database.makeProfile(nameController.text);
+                        }
+                        profile.name = nameController.text;
                         profile.birthday = date;
                         database.updateProfile(profile);
                         logger.d('Name: ${nameController.text}');
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const ProfileManager()),
-                        );
+                        // TODO: 11/6/2023 Add Gender
+                        GoRouter.of(context).pop();
                       }
                     },
                     child: const Text('Submit'),

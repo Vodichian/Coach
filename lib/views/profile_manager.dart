@@ -57,6 +57,7 @@ class _ProfileManagerState extends State<ProfileManager> {
 
   _onEdit(Profile profile) {
     _logger.d('_onEdit called for $profile');
+    GoRouter.of(context).push('/profiles/edit_profile', extra: profile);
   }
 
   _onDelete(Profile profile) {
