@@ -28,6 +28,8 @@ class _ProfileEditorState extends State<ProfileEditor> {
   final dateController = TextEditingController();
   final format = DateFormat("MMMM yyyy");
 
+  Gender? gender;
+
   @override
   void initState() {
     super.initState();
@@ -35,6 +37,7 @@ class _ProfileEditorState extends State<ProfileEditor> {
       nameController.text = widget.profile!.name;
       DateTime date = widget.profile!.birthday;
       dateController.text = format.format(date);
+      gender = widget.profile!.gender;
     }
   }
 
@@ -48,37 +51,41 @@ class _ProfileEditorState extends State<ProfileEditor> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            showDialog(context: context, builder: (builderContext) {
-              return AlertDialog(
-                title: const Text('Confirmation'),
-                content: const Text('Really abandon changes?'),
-                actions: [
-                  // Yes
-                  TextButton(
+            showDialog(
+              context: context,
+              builder: (builderContext) {
+                return AlertDialog(
+                  title: const Text('Confirmation'),
+                  content: const Text('Really abandon changes?'),
+                  actions: [
+                    // Yes
+                    TextButton(
+                        onPressed: () {
+                          /// close dialog
+                          GoRouter.of(context).pop();
+
+                          /// navigate back to parent route
+                          GoRouter.of(context).pop();
+                        },
+                        child: const Text('Yes')),
+                    // No
+                    TextButton(
                       onPressed: () {
-                        /// close dialog
-                        GoRouter.of(context).pop();
-                        /// navigate back to parent route
+                        // Close the dialog
                         GoRouter.of(context).pop();
                       },
-                      child: const Text('Yes')),
-                  // No
-                  TextButton(
-                    onPressed: () {
-                      // Close the dialog
-                      GoRouter.of(context).pop();
-                    },
-                    child: const Text('Cancel'),
-                  )
-                ],
-              );
-            },);
+                      child: const Text('Cancel'),
+                    )
+                  ],
+                );
+              },
+            );
           },
         ),
       ),
       body: Center(
         child: SizedBox(
-          width: 400,
+          width: 600,
           child: Form(
             key: _formKey,
             child: Column(
@@ -97,7 +104,7 @@ class _ProfileEditorState extends State<ProfileEditor> {
                 TextFormField(
                   decoration: const InputDecoration(
                     hintText: 'Enter your name',
-                    labelText: 'Name:',
+                    label: Text('Name'),
                     filled: true,
                     icon: Icon(Icons.account_circle),
                   ),
@@ -125,7 +132,9 @@ class _ProfileEditorState extends State<ProfileEditor> {
                 TextFormField(
                   decoration: const InputDecoration(
                     hintText: 'Birth date, i.e. "January 1970"',
+                    label: Text('Birthday'),
                     icon: Icon(Icons.cake),
+                    filled: true,
                   ),
                   validator: (String? value) {
                     if (value == null || value.isEmpty) {
@@ -144,8 +153,52 @@ class _ProfileEditorState extends State<ProfileEditor> {
                   },
                   controller: dateController,
                 ),
+
+                /// Gender field
+                DropdownButtonFormField(
+                  decoration: const InputDecoration(
+                    hintText: 'Please choose a gender',
+                    label: Text('Gender'),
+                    icon: Icon(Icons.wc_outlined),
+                    filled: true,
+                  ),
+                  value: gender,
+                  items: const [
+                    DropdownMenuItem(
+                      value: Gender.male,
+                      child: Row(
+                        children: [
+                          Icon(Icons.man_4_outlined),
+                          Text('Male'),
+                        ],
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: Gender.female,
+                      child: Row(
+                        children: [
+                          Icon(Icons.woman_2_outlined),
+                          Text('Female'),
+                        ],
+                      ),
+                    ),
+                  ],
+                  onChanged: (Gender? value) {
+                    logger.d('Dropdown changed to $value');
+                    setState(() {
+                      gender = value;
+                    });
+                  },
+                  validator: (Gender? value) {
+                    if (value == null) {
+                      return 'A gender is required for health calculations';
+                    }
+                    return null;
+                  },
+                ),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16.0),
+
                   /// Submit Button
                   child: ElevatedButton(
                     onPressed: () {
@@ -162,9 +215,11 @@ class _ProfileEditorState extends State<ProfileEditor> {
                         }
                         profile.name = nameController.text;
                         profile.birthday = date;
+
+                        /// gender should never be null at this point, but as a
+                        /// fallback, defaulting it to male.
+                        profile.gender = gender ?? Gender.male;
                         database.updateProfile(profile);
-                        logger.d('Name: ${nameController.text}');
-                        // TODO: 11/6/2023 Add Gender
                         GoRouter.of(context).pop();
                       }
                     },

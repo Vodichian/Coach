@@ -31,7 +31,7 @@ class _ProfileManagerState extends State<ProfileManager> {
       ),
       body: Center(
           child: SizedBox(
-        width: 400,
+        width: 600,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
