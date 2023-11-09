@@ -17,7 +17,9 @@ class Profile {
         'name': profile.name,
         'date': profile.birthday.toString(),
         'gender': profile.gender.name,
-  };
+      };
+
+  int get age => DateTime.now().difference(birthday).inDays ~/ 365;
 
   @override
   bool operator ==(Object other) =>
@@ -39,4 +41,11 @@ class Profile {
   }
 }
 
-enum Gender { male, female }
+enum Gender {
+  male(printable: 'Male'),
+  female(printable: 'Female');
+
+  const Gender({required this.printable});
+
+  final String printable;
+}

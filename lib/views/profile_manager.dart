@@ -38,8 +38,14 @@ class _ProfileManagerState extends State<ProfileManager> {
             const SizedBox(
               height: 100,
             ),
+            Consumer<Database>(
+              builder: _currentCard,
+            ),
+            const SizedBox(
+              height: 100,
+            ),
             Text(
-              'Select a profile:',
+              'All Profiles',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             Consumer<Database>(
@@ -89,5 +95,43 @@ class _ProfileManagerState extends State<ProfileManager> {
     Database database = context.read();
     _logger.d('Setting profile "${profile.name} to current');
     database.makeProfileCurrent(profile);
+  }
+
+  /// builds the Card for the currently selected profile
+  Widget _currentCard(BuildContext context, Database database, Widget? child) {
+    Profile profile = database.currentProfile();
+    return Card(
+      child: SizedBox(
+        width: 600,
+        height: 200,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(
+              height: 10,
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                profile.name,
+                style: Theme.of(context).textTheme.displaySmall,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 8.0),
+              child: Text('${profile.gender.printable}, ${profile.age} years old'),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8.8, 16.0, 0.0, 0.0),
+              child: Text(
+                '71.1 kg',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
