@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
+import '../database/database.dart';
 import '../database/local_database.dart';
 
 /// An initial loading screen to give the database time to synchronize with the
@@ -24,15 +25,15 @@ class _LoadingScreenState extends State<LoadingScreen> {
   void initState() {
     super.initState();
     _loadDatabase();
-    Timer(const Duration(seconds: 3), () {
+    Timer(const Duration(seconds: 1), () {
       GoRouter.of(context).go('/weightchart');
     });
   }
 
   void _loadDatabase() async {
-    LocalDatabase database = context.read();
+    Database database = context.read();
     Directory directory = await getApplicationDocumentsDirectory();
-    database.load(directory);
+    (database as LocalDatabase).load(directory);
   }
 
   @override

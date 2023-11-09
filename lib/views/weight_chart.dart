@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 
+import '../database/database.dart';
 import '../database/health_record.dart';
 import '../database/local_database.dart';
 import 'coach_line_chart.dart';
@@ -60,7 +61,7 @@ class WeightChartState extends State<WeightChart> {
   /// Returns a Future containing the list of records
   Future<List<HealthRecord>> getRecords() async {
     _logger.d('getRecords called');
-    LocalDatabase database = context.read();
+    Database database = context.read();
     if (database.state() == DatabaseState.running) {
       return database.records(database.currentProfile());
     } else {

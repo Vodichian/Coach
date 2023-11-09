@@ -1,42 +1,24 @@
-import 'package:coach/views/profile_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
 
-void main() => runApp(const ProfileEditor());
+import '../database/database.dart';
+import '../database/profile.dart';
 
-class ProfileEditor extends StatelessWidget {
-  const ProfileEditor({super.key});
+class ProfileEditor extends StatefulWidget {
+  final Profile? profile;
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Create a new profile'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              // TODO: 10/26/2023 Add a confirmation step
-              GoRouter.of(context).pop();
-            },
-          ),
-        ),
-        body: const ProfileEditorState(),
-      ),
-    );
-  }
-}
+  const ProfileEditor({super.key, this.profile});
 
-class ProfileEditorState extends StatefulWidget {
-  const ProfileEditorState({super.key});
+  get isEditMode => profile != null;
 
   @override
-  State<ProfileEditorState> createState() => _ProfileEditorStateState();
+  State<ProfileEditor> createState() => _ProfileEditorState();
 }
 
-class _ProfileEditorStateState extends State<ProfileEditorState> {
+class _ProfileEditorState extends State<ProfileEditor> {
   var logger = Logger(
     printer: PrettyPrinter(methodCount: 0),
   );
@@ -46,118 +28,209 @@ class _ProfileEditorStateState extends State<ProfileEditorState> {
   final dateController = TextEditingController();
   final format = DateFormat("MMMM yyyy");
 
+  Gender? gender;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isEditMode) {
+      nameController.text = widget.profile!.name;
+      DateTime date = widget.profile!.birthday;
+      dateController.text = format.format(date);
+      gender = widget.profile!.gender;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: SizedBox(
-        width: 400,
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              const SizedBox(
-                height: 100,
-              ),
-              Text('Account Details',
-                  style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(
-                height: 20,
-              ),
+    return Scaffold(
+      appBar: AppBar(
+        title: widget.isEditMode
+            ? Text('Editing profile "${widget.profile?.name}"')
+            : const Text('Create a new profile'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (builderContext) {
+                return AlertDialog(
+                  title: const Text('Confirmation'),
+                  content: const Text('Really abandon changes?'),
+                  actions: [
+                    // Yes
+                    TextButton(
+                        onPressed: () {
+                          /// close dialog
+                          GoRouter.of(context).pop();
 
-              /// Name field
-              TextFormField(
-                decoration: const InputDecoration(
-                  hintText: 'Enter your name',
-                  labelText: 'Name:',
-                  filled: true,
-                  icon: Icon(Icons.account_circle),
+                          /// navigate back to parent route
+                          GoRouter.of(context).pop();
+                        },
+                        child: const Text('Yes')),
+                    // No
+                    TextButton(
+                      onPressed: () {
+                        // Close the dialog
+                        GoRouter.of(context).pop();
+                      },
+                      child: const Text('Cancel'),
+                    )
+                  ],
+                );
+              },
+            );
+          },
+        ),
+      ),
+      body: Center(
+        child: SizedBox(
+          width: 600,
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const SizedBox(
+                  height: 100,
                 ),
-                validator: (String? value) {
-                  if (value == null || value.isEmpty) {
-                    return 'A name for your profile is required';
-                  }
-                  return null;
-                },
-                controller: nameController,
-              ),
+                Text('Account Details',
+                    style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(
+                  height: 20,
+                ),
 
-              /// DoB field
-              TextFormField(
-                decoration: const InputDecoration(
-                  hintText:
-                      'Month and year of birth, for example: "January 1970"',
-                  icon: Icon(Icons.cake),
-                ),
-                validator: (String? value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Date of birth is required for health calculations';
-                  } else {
-                    try {
-                      if (format.parse(value).isAfter(DateTime.now())) {
-                        return 'This date is in the future';
-                      } else {
-                        return null;
+                /// Name field
+                TextFormField(
+                  decoration: const InputDecoration(
+                    hintText: 'Enter your name',
+                    label: Text('Name'),
+                    filled: true,
+                    icon: Icon(Icons.account_circle),
+                  ),
+                  validator: (String? value) {
+                    if (value == null || value.isEmpty) {
+                      return 'A name for your profile is required';
+                    } else if (!widget.isEditMode) {
+                      /// verify name doesn't already exist
+                      Database database = context.read();
+                      bool found = database
+                          .profiles()
+                          .where((element) =>
+                              element.name.toLowerCase() == value.toLowerCase())
+                          .isNotEmpty;
+                      if (found) {
+                        return 'The name "$value" already exists';
                       }
-                    } on FormatException {
-                      return 'Not a valid date';
                     }
-                  }
-                },
-                controller: dateController,
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Validate will return true if the form is valid, or false if
-                    // the form is invalid.
-                    if (_formKey.currentState!.validate()) {
-                      // Process data.
-                      logger.d('Name: ${nameController.text}');
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const ProfileManager()),
-                      );
+                    return null;
+                  },
+                  controller: nameController,
+                ),
+
+                /// DoB field
+                TextFormField(
+                  decoration: const InputDecoration(
+                    hintText: 'Birth date, i.e. "January 1970"',
+                    label: Text('Birthday'),
+                    icon: Icon(Icons.cake),
+                    filled: true,
+                  ),
+                  validator: (String? value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Date of birth is required for health calculations';
+                    } else {
+                      try {
+                        if (format.parse(value).isAfter(DateTime.now())) {
+                          return 'This date is in the future';
+                        } else {
+                          return null;
+                        }
+                      } on FormatException {
+                        return 'Not a valid date';
+                      }
                     }
                   },
-                  child: const Text('Submit'),
+                  controller: dateController,
                 ),
-              ),
-            ],
+
+                /// Gender field
+                DropdownButtonFormField(
+                  decoration: const InputDecoration(
+                    hintText: 'Please choose a gender',
+                    label: Text('Gender'),
+                    icon: Icon(Icons.wc_outlined),
+                    filled: true,
+                  ),
+                  value: gender,
+                  items: const [
+                    DropdownMenuItem(
+                      value: Gender.male,
+                      child: Row(
+                        children: [
+                          Icon(Icons.man_4_outlined),
+                          Text('Male'),
+                        ],
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: Gender.female,
+                      child: Row(
+                        children: [
+                          Icon(Icons.woman_2_outlined),
+                          Text('Female'),
+                        ],
+                      ),
+                    ),
+                  ],
+                  onChanged: (Gender? value) {
+                    logger.d('Dropdown changed to $value');
+                    setState(() {
+                      gender = value;
+                    });
+                  },
+                  validator: (Gender? value) {
+                    if (value == null) {
+                      return 'A gender is required for health calculations';
+                    }
+                    return null;
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+
+                  /// Submit Button
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Validate will return true if the form is valid, or false if
+                      // the form is invalid.
+                      if (_formKey.currentState!.validate()) {
+                        Database database = context.read();
+                        DateTime date = format.parse(dateController.text);
+                        Profile profile;
+                        if (widget.isEditMode) {
+                          profile = widget.profile!;
+                        } else {
+                          profile = database.makeProfile(nameController.text);
+                        }
+                        profile.name = nameController.text;
+                        profile.birthday = date;
+
+                        /// gender should never be null at this point, but as a
+                        /// fallback, defaulting it to male.
+                        profile.gender = gender ?? Gender.male;
+                        database.updateProfile(profile);
+                        GoRouter.of(context).pop();
+                      }
+                    },
+                    child: const Text('Submit'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
-
-// class BasicDateField extends StatelessWidget {
-//   final format = DateFormat("yyyy-MM-dd");
-//
-//   BasicDateField({super.key});
-//   @override
-//   Widget build(BuildContext context) {
-//     return Column(children: <Widget>[
-//       Text('Basic date field (${format.pattern})'),
-//       DateTimeField(
-//         format: format,
-//         validator: (DateTime? value) {
-//           if (value == null || value.isAfter(DateTime.now())) {
-//             return 'A valid date is required';
-//           }
-//           return null;
-//         },
-//         onShowPicker: (context, currentValue) {
-//           return showDatePicker(
-//               context: context,
-//               firstDate: DateTime(1900),
-//               initialDate: currentValue ?? DateTime.now(),
-//               lastDate: DateTime(2100));
-//         },
-//         controller: dateController,
-//       ),
-//     ]);
-//   }
-// }

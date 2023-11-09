@@ -1,9 +1,11 @@
-import 'package:coach/database/local_database.dart';
 import 'package:coach/database/profile.dart';
+import 'package:coach/profile_list_view.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
+
+import '../database/database.dart';
 
 var _logger = Logger(
   printer: PrettyPrinter(methodCount: 0),
@@ -29,45 +31,107 @@ class _ProfileManagerState extends State<ProfileManager> {
       ),
       body: Center(
           child: SizedBox(
-        width: 400,
+        width: 600,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(
               height: 100,
             ),
+            Consumer<Database>(
+              builder: _currentCard,
+            ),
+            const SizedBox(
+              height: 100,
+            ),
             Text(
-              'Select a profile:',
+              'All Profiles',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
-            ListView(
-              shrinkWrap: true,
-              children: _profileList(),
-            ),
+            Consumer<Database>(
+                builder: (context, database, child) => ProfileListView(
+                      items: database.profiles(),
+                      onEdit: _onEdit,
+                      onDelete: _onDelete,
+                      onTap: _makeCurrent,
+                    ))
           ],
         ),
       )),
     );
   }
 
-  List<Widget> _profileList() {
-    LocalDatabase database = context.read();
-    return database.profiles().map((e) => _toText(e)).toList();
+  _onEdit(Profile profile) {
+    _logger.d('_onEdit called for $profile');
+    GoRouter.of(context).push('/profiles/edit_profile', extra: profile);
   }
 
-  Widget _toText(Profile profile) {
-    Widget widget = Card(
-        child: ListTile(
-      title: Text(profile.name),
-      onTap: () => _makeCurrent(profile),
-      leading: const Icon(Icons.account_circle),
-    ));
-    return widget;
+  _onDelete(Profile profile) {
+    _logger.d('_onDelete called for $profile');
+    Database database = context.read();
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Delete Confirmation'),
+            content: Text('Really delete "${profile.name}"?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                  onPressed: () {
+                    database.removeProfile(profile);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Ok')),
+            ],
+          );
+        });
   }
 
   _makeCurrent(Profile profile) {
-    LocalDatabase database = context.read();
+    Database database = context.read();
     _logger.d('Setting profile "${profile.name} to current');
     database.makeProfileCurrent(profile);
+  }
+
+  /// builds the Card for the currently selected profile
+  Widget _currentCard(BuildContext context, Database database, Widget? child) {
+    Profile profile = database.currentProfile();
+    return Card(
+      child: SizedBox(
+        width: 600,
+        height: 200,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(
+              height: 10,
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                profile.name,
+                style: Theme.of(context).textTheme.displaySmall,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 8.0),
+              child: Text('${profile.gender.printable}, ${profile.age} years old'),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8.8, 16.0, 0.0, 0.0),
+              child: Text(
+                '71.1 kg',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
